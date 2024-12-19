@@ -1,0 +1,27 @@
+# Step 1: Modules caching
+FROM golang:1.23.4 as modules
+COPY go.mod go.sum /modules/
+WORKDIR /modules
+RUN go mod download
+
+# Step 2: Builder
+FROM golang:1.23.4 as builder
+COPY --from=modules /go/pkg /go/pkg
+COPY . /app
+WORKDIR /app
+RUN go install github.com/cosmtrek/air@v1.52.1
+
+# Step 3: Final for development
+FROM golang:1.23.4 as dev
+COPY --from=builder /go/bin/air /usr/bin/air 
+COPY --from=builder /app /app
+WORKDIR /app
+ENTRYPOINT ["air", "-c", ".air.toml"]
+
+# # Step 3: Final for production
+# FROM scratch
+# COPY --from=builder /app/config /config
+# COPY --from=builder /app/migrations /migrations
+# COPY --from=builder /bin/app /app
+# # COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+# CMD ["/app"]
