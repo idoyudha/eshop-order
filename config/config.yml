@@ -1,0 +1,9 @@
+app:
+  name: 'github.com/idoyudha/eshop-order'
+  version: '1.0.0'
+
+http:
+  port: '2004'
+
+log:
+  level: 'debug'
