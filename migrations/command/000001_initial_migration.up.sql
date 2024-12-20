@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS "order_addresses" (
   "order_id" uuid,
   "street" varchar NOT NULL,
   "city" varchar NOT NULL,
-  "province" varchar NOT NULL,
+  "state" varchar NOT NULL,
   "zip_code" varchar NOT NULL,
   "note" varchar,
   "created_at" timestamp NOT NULL,
