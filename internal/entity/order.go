@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	PENDING     = "PENDING"
 	ON_DELIVERY = "ON_DELIVERY"
 	REJECTED    = "REJECTED"
 )
@@ -17,6 +18,8 @@ type Order struct {
 	Status     string
 	TotalPrice float64
 	PaymentID  uuid.UUID
+	Items      []OrderItem
+	Address    OrderAddress
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	DeletedAt  time.Time
@@ -30,4 +33,9 @@ func (o *Order) SetStatusToOnDelivery() {
 // admin reject payment and set the order status to REJECTED
 func (o *Order) SetStatusToRejected() {
 	o.Status = REJECTED
+}
+
+// user just create the order and set the order status to PENDING
+func (o *Order) SetStatusTopPending() {
+	o.Status = PENDING
 }

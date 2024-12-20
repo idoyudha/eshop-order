@@ -15,6 +15,8 @@ type OrderView struct {
 	PaymentStatus    string
 	PaymentImageUrl  string
 	PaymentAdminNote string
+	Items            []OrderItemView
+	Address          OrderAddressView
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 	DeletedAt        time.Time
