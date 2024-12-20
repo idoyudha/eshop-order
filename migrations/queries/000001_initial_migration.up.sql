@@ -15,6 +15,7 @@ CREATE TYPE "payment_status" AS ENUM (
 
 CREATE TABLE IF NOT EXISTS "orders_view" (
   "id" uuid PRIMARY KEY,
+  "user_id" uuid NOT NULL,
   "status" order_status NOT NULL,
   "total_price" float NOT NULL,
   "payment_id" uuid,
