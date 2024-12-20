@@ -14,11 +14,11 @@ type (
 	}
 
 	OrderPostgreQueryRepo interface {
-		GetByID(context.Context, uuid.UUID) (*entity.Order, error)
-		GetAll(context.Context) ([]*entity.Order, error)
-		GetByUserID(context.Context, uuid.UUID) ([]*entity.Order, error)
-		GetByPaymentID(context.Context, uuid.UUID) ([]*entity.Order, error)
-		GetByStatus(context.Context, string) ([]*entity.Order, error)
+		GetByID(context.Context, uuid.UUID) (*entity.OrderView, error)
+		GetAll(context.Context) ([]*entity.OrderView, error)
+		GetByUserID(context.Context, uuid.UUID) ([]*entity.OrderView, error)
+		GetByPaymentID(context.Context, uuid.UUID) ([]*entity.OrderView, error)
+		GetByStatus(context.Context, string) ([]*entity.OrderView, error)
 	}
 
 	OrderCommand interface {
@@ -27,10 +27,10 @@ type (
 	}
 
 	OrderQuery interface {
-		GetOrderByID(context.Context, uuid.UUID) (*entity.Order, error)
-		GetAllOrders(context.Context) ([]*entity.Order, error)
-		GetOrderByUserID(context.Context, uuid.UUID) ([]*entity.Order, error)
-		GetOrderByPaymentID(context.Context, uuid.UUID) ([]*entity.Order, error)
-		GetOrderByStatus(context.Context, string) ([]*entity.Order, error)
+		GetOrderByID(context.Context, uuid.UUID) (*entity.OrderView, error)
+		GetAllOrders(context.Context) ([]*entity.OrderView, error)
+		GetOrderByUserID(context.Context, uuid.UUID) ([]*entity.OrderView, error)
+		GetOrderByPaymentID(context.Context, uuid.UUID) ([]*entity.OrderView, error)
+		GetOrderByStatus(context.Context, string) ([]*entity.OrderView, error)
 	}
 )
