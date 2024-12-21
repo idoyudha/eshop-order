@@ -29,7 +29,6 @@ func CreateOrderRequestToOrderEntity(req createOrderRequest, userID uuid.UUID) (
 	return entity.Order{
 		ID:         orderID,
 		UserID:     userID,
-		Status:     entity.PENDING,
 		TotalPrice: totalPice,
 		PaymentID:  uuid.UUID{},
 		Items:      items,

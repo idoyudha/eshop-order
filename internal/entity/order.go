@@ -7,9 +7,11 @@ import (
 )
 
 const (
-	PENDING     = "PENDING"
-	ON_DELIVERY = "ON_DELIVERY"
-	REJECTED    = "REJECTED"
+	ORDER_PENDING          = "PENDING"
+	ORDER_PAYMENT_ACCEPTED = "PAYMENT_ACCEPTED"
+	ORDER_ON_DELIVERY      = "ON_DELIVERY"
+	ORDER_REJECTED         = "REJECTED"
+	ORDER_DELIVERED        = "DELIVERED"
 )
 
 type Order struct {
@@ -27,15 +29,20 @@ type Order struct {
 
 // admin accept payment and set the order status to ON_DELIVERY
 func (o *Order) SetStatusToOnDelivery() {
-	o.Status = ON_DELIVERY
+	o.Status = ORDER_ON_DELIVERY
 }
 
 // admin reject payment and set the order status to REJECTED
 func (o *Order) SetStatusToRejected() {
-	o.Status = REJECTED
+	o.Status = ORDER_REJECTED
 }
 
 // user just create the order and set the order status to PENDING
-func (o *Order) SetStatusTopPending() {
-	o.Status = PENDING
+func (o *Order) SetStatusToPending() {
+	o.Status = ORDER_PENDING
+}
+
+// user accept the delivery
+func (o *Order) SetStatusToDelivered() {
+	o.Status = ORDER_DELIVERED
 }

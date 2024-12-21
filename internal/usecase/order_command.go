@@ -18,10 +18,21 @@ func NewOrderCommandUseCase(repoPostgresCommand OrderPostgreCommandRepo) *OrderC
 }
 
 func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Order) error {
+	order.SetStatusToPending()
 	return u.repoPostgresCommand.Insert(ctx, order)
 }
 
-func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *entity.Order) error {
+func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *entity.Order, isAcceptedPayment bool) error {
+	if order.Status == entity.ORDER_ON_DELIVERY {
+		order.SetStatusToDelivered()
+	}
+	if order.Status == entity.ORDER_PENDING {
+		if isAcceptedPayment {
+			order.SetStatusToOnDelivery()
+		} else {
+			order.SetStatusToRejected()
+		}
+	}
 	return u.repoPostgresCommand.UpdateStatus(ctx, order)
 }
 

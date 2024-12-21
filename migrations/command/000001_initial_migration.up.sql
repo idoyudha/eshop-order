@@ -1,5 +1,6 @@
 CREATE TYPE "order_status" AS ENUM (
   'PENDING',
+  'PAYMENT_ACCEPTED',
   'ON_DELIVERY',
   'DELIVERED',
   'REJECTED',
