@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/idoyudha/eshop-order/internal/entity"
 )
 
@@ -20,6 +21,10 @@ func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Ord
 	return u.repoPostgresCommand.Insert(ctx, order)
 }
 
-func (u *OrderCommandUseCase) UpdateStatus(ctx context.Context, order *entity.Order) error {
+func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *entity.Order) error {
 	return u.repoPostgresCommand.UpdateStatus(ctx, order)
+}
+
+func (u *OrderCommandUseCase) UpdateOrderPaymentID(ctx context.Context, orderID uuid.UUID, paymentID uuid.UUID) error {
+	return u.repoPostgresCommand.UpdatePaymentID(ctx, orderID, paymentID)
 }

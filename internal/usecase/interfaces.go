@@ -11,6 +11,7 @@ type (
 	OrderPostgreCommandRepo interface {
 		Insert(context.Context, *entity.Order) error
 		UpdateStatus(context.Context, *entity.Order) error
+		UpdatePaymentID(context.Context, uuid.UUID, uuid.UUID) error
 	}
 
 	OrderPostgreQueryRepo interface {
@@ -24,6 +25,7 @@ type (
 	OrderCommand interface {
 		CreateOrder(context.Context, *entity.Order) error
 		UpdateOrderStatus(context.Context, *entity.Order) error
+		UpdateOrderPaymentID(context.Context, uuid.UUID, uuid.UUID) error
 	}
 
 	OrderQuery interface {
