@@ -17,7 +17,7 @@ type (
 		GetByID(context.Context, uuid.UUID) (*entity.OrderView, error)
 		GetAll(context.Context) ([]*entity.OrderView, error)
 		GetByUserID(context.Context, uuid.UUID) ([]*entity.OrderView, error)
-		GetByPaymentID(context.Context, uuid.UUID) ([]*entity.OrderView, error)
+		GetByPaymentID(context.Context, uuid.UUID) (*entity.OrderView, error)
 		GetByStatus(context.Context, string) ([]*entity.OrderView, error)
 	}
 
@@ -30,7 +30,7 @@ type (
 		GetOrderByID(context.Context, uuid.UUID) (*entity.OrderView, error)
 		GetAllOrders(context.Context) ([]*entity.OrderView, error)
 		GetOrderByUserID(context.Context, uuid.UUID) ([]*entity.OrderView, error)
-		GetOrderByPaymentID(context.Context, uuid.UUID) ([]*entity.OrderView, error)
+		GetOrderByPaymentID(context.Context, uuid.UUID) (*entity.OrderView, error)
 		GetOrderByStatus(context.Context, string) ([]*entity.OrderView, error)
 	}
 )
