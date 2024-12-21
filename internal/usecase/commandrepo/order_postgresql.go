@@ -21,7 +21,7 @@ func NewOrderPostgreCommandRepo(conn *postgrecommand.PostgresCommand) *OrderPost
 
 const (
 	queryInsertOrder        = `INSERT INTO orders (id, user_id, status, total_price, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6);`
-	queryInsertOrderItems   = `INSERT INTO order_items (id, order_id, product_id, product_quantity, note, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7);`
+	queryInsertOrderItems   = `INSERT INTO order_items (id, order_id, product_id, product_price,product_quantity, note, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7);`
 	queryInsertOrderAddress = `INSERT INTO order_addresses (id, order_id, street, city, state, zip_code, note, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`
 )
 
@@ -45,7 +45,7 @@ func (r *OrderPostgreCommandRepo) Insert(ctx context.Context, order *entity.Orde
 	// insert order items
 	for _, item := range order.Items {
 		_, err = tx.ExecContext(ctx, queryInsertOrderItems,
-			item.ID, order.ID, item.ProductID, item.ProductQuantity, item.Note, item.CreatedAt, item.UpdatedAt)
+			item.ID, order.ID, item.ProductID, item.ProductPrice, item.ProductQuantity, item.Note, item.CreatedAt, item.UpdatedAt)
 		if err != nil {
 			return err
 		}

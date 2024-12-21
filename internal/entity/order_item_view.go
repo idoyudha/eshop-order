@@ -11,8 +11,8 @@ type OrderItemView struct {
 	OrderID             uuid.UUID
 	ProductID           uuid.UUID
 	ProductName         string
-	ProductQuantity     int64
 	ProductPrice        float64
+	ProductQuantity     int64
 	ProductImageUrl     string
 	ProductDescription  string
 	ProductCategoryID   uuid.UUID

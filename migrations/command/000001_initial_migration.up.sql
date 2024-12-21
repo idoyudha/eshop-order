@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS "order_items" (
   "id" uuid PRIMARY KEY,
   "order_id" uuid,
   "product_id" uuid NOT NULL,
+  "product_price" float NOT NULL,
   "product_quantity" integer NOT NULL,
   "note" text,
   "created_at" timestamp NOT NULL,
