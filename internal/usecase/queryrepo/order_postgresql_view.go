@@ -2,6 +2,7 @@ package queryrepo
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -19,7 +20,7 @@ func NewOrderPostgreCommandRepo(conn *postgrequery.PostgresQuery) *OrderPostgreQ
 	}
 }
 
-const queryGetOrderByID = `
+const baseQueryOrder = `
 	SELECT 
         o.*,
         oa.id as address_id,
@@ -41,34 +42,58 @@ const queryGetOrderByID = `
     FROM orders_view o
     LEFT JOIN order_addresses_view oa ON o.id = oa.order_id
     LEFT JOIN order_items_view oi ON o.id = oi.order_id
-    WHERE o.id = $1 AND o.deleted_at IS NULL;
+    o.deleted_at IS NULL
 `
 
-func (r *OrderPostgreQueryRepo) GetByID(ctx context.Context, id uuid.UUID) (*entity.OrderView, error) {
-	stmt, errStmt := r.Conn.PrepareContext(ctx, queryGetOrderByID)
-	if errStmt != nil {
-		return nil, errStmt
-	}
-	defer stmt.Close()
+const queryGetOrderByID = baseQueryOrder + ` AND o.id = $1;`
 
-	rows, err := r.Conn.QueryContext(ctx, queryGetOrderByID, id)
+func (r *OrderPostgreQueryRepo) GetByID(ctx context.Context, id uuid.UUID) (*entity.OrderView, error) {
+	return r.scanSingleOrder(ctx, queryGetOrderByID, id)
+}
+
+const queryGetAllOrder = baseQueryOrder + ` ORDER BY o.created_at DESC;`
+
+func (r *OrderPostgreQueryRepo) GetAllOrders(ctx context.Context) ([]*entity.OrderView, error) {
+	return r.scanMultipleOrders(ctx, queryGetAllOrder)
+}
+
+const queryGetOrderByUserID = baseQueryOrder + ` AND o.user_id = $1 ORDER BY o.created_at DESC;`
+
+func (r *OrderPostgreQueryRepo) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*entity.OrderView, error) {
+	return r.scanMultipleOrders(ctx, queryGetOrderByUserID, userID)
+}
+
+const queryGetOrderByPaymentID = baseQueryOrder + ` AND o.payment_id = $1;`
+
+func (r *OrderPostgreQueryRepo) GetByPaymentID(ctx context.Context, paymentID uuid.UUID) (*entity.OrderView, error) {
+	return r.scanSingleOrder(ctx, queryGetOrderByPaymentID, paymentID)
+}
+
+const queryGetOrderByStatus = baseQueryOrder + ` AND o.status = $1 ORDER BY o.created_at DESC;`
+
+func (r *OrderPostgreQueryRepo) GetByStatus(ctx context.Context, status string) ([]*entity.OrderView, error) {
+	return r.scanMultipleOrders(ctx, queryGetOrderByStatus, status)
+}
+
+// helper to scan single order
+func (r *OrderPostgreQueryRepo) scanSingleOrder(ctx context.Context, query string, args ...interface{}) (*entity.OrderView, error) {
+	rows, err := r.Conn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query order: %w", err)
 	}
 	defer rows.Close()
 
-	var order entity.OrderView
+	var order *entity.OrderView
 	items := make(map[uuid.UUID]entity.OrderItemView)
 
 	for rows.Next() {
 		var (
-			// order
-			o entity.Order
-			// address
-			addressID                    uuid.UUID
-			street, city, state, zipCode string
-			addressNote                  string
-			// item
+			// order fields
+			o entity.OrderView
+			// address fields
+			addressID                                 uuid.UUID
+			street, city, state, zipCode, addressNote string
+			// item fields
 			itemID, productID                   uuid.UUID
 			productName                         string
 			productPrice                        float64
@@ -80,12 +105,10 @@ func (r *OrderPostgreQueryRepo) GetByID(ctx context.Context, id uuid.UUID) (*ent
 		)
 
 		err := rows.Scan(
-			// Order fields
 			&o.ID, &o.UserID, &o.Status, &o.TotalPrice, &o.PaymentID,
+			&o.PaymentStatus, &o.PaymentImageUrl, &o.PaymentAdminNote,
 			&o.CreatedAt, &o.UpdatedAt, &o.DeletedAt,
-			// Address fields
 			&addressID, &street, &city, &state, &zipCode, &addressNote,
-			// Item fields
 			&itemID, &productID, &productName, &productPrice, &productQuantity,
 			&productImageURL, &productDescription, &productCategoryID,
 			&productCategoryName, &itemNote,
@@ -94,21 +117,113 @@ func (r *OrderPostgreQueryRepo) GetByID(ctx context.Context, id uuid.UUID) (*ent
 			return nil, fmt.Errorf("failed to scan order: %w", err)
 		}
 
-		order.Address = entity.OrderAddressView{
-			ID:      addressID,
-			OrderID: order.ID,
-			Street:  street,
-			City:    city,
-			State:   state,
-			ZipCode: zipCode,
-			Note:    addressNote,
+		if order == nil {
+			order = &o
+			order.Address = entity.OrderAddressView{
+				ID:      addressID,
+				OrderID: order.ID,
+				Street:  street,
+				City:    city,
+				State:   state,
+				ZipCode: zipCode,
+				Note:    addressNote,
+			}
 		}
 
-		// add item if it's not already in the map
-		if _, exists := items[itemID]; !exists {
-			items[itemID] = entity.OrderItemView{
+		items[itemID] = entity.OrderItemView{
+			ID:                  itemID,
+			OrderID:             order.ID,
+			ProductID:           productID,
+			ProductName:         productName,
+			ProductPrice:        productPrice,
+			ProductQuantity:     productQuantity,
+			ProductImageUrl:     productImageURL,
+			ProductDescription:  productDescription,
+			ProductCategoryID:   productCategoryID,
+			ProdcutCategoryName: productCategoryName,
+			Note:                itemNote,
+		}
+
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating order rows: %w", err)
+	}
+
+	if order == nil {
+		return nil, sql.ErrNoRows
+	}
+
+	// Convert items map to slice
+	order.Items = make([]entity.OrderItemView, 0, len(items))
+	for _, item := range items {
+		order.Items = append(order.Items, item)
+	}
+
+	return order, nil
+}
+
+// helper to scan multiple orders
+func (r *OrderPostgreQueryRepo) scanMultipleOrders(ctx context.Context, query string, args ...interface{}) ([]*entity.OrderView, error) {
+	rows, err := r.Conn.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query orders: %w", err)
+	}
+	defer rows.Close()
+
+	ordersMap := make(map[uuid.UUID]*entity.OrderView)
+	itemsMap := make(map[uuid.UUID]map[uuid.UUID]entity.OrderItemView)
+
+	for rows.Next() {
+		var (
+			// order fields
+			o entity.OrderView
+			// address fields
+			addressID                                 uuid.UUID
+			street, city, state, zipCode, addressNote string
+			// item fields
+			itemID, productID                   uuid.UUID
+			productName                         string
+			productPrice                        float64
+			productQuantity                     int64
+			productImageURL, productDescription string
+			productCategoryID                   uuid.UUID
+			productCategoryName, itemNote       string
+		)
+
+		err := rows.Scan(
+			&o.ID, &o.UserID, &o.Status, &o.TotalPrice, &o.PaymentID,
+			&o.PaymentStatus, &o.PaymentImageUrl, &o.PaymentAdminNote,
+			&o.CreatedAt, &o.UpdatedAt, &o.DeletedAt,
+			&addressID, &street, &city, &state, &zipCode, &addressNote,
+			&itemID, &productID, &productName, &productPrice, &productQuantity,
+			&productImageURL, &productDescription, &productCategoryID,
+			&productCategoryName, &itemNote,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan order: %w", err)
+		}
+
+		// if this is the first time we're seeing this order
+		if _, exists := ordersMap[o.ID]; !exists {
+			ordersMap[o.ID] = &o
+			ordersMap[o.ID].Address = entity.OrderAddressView{
+				ID:      addressID,
+				OrderID: o.ID,
+				Street:  street,
+				City:    city,
+				State:   state,
+				ZipCode: zipCode,
+				Note:    addressNote,
+			}
+			itemsMap[o.ID] = make(map[uuid.UUID]entity.OrderItemView)
+		}
+
+		// add item if it exists and isn't already added
+		if _, exists := itemsMap[o.ID][itemID]; !exists {
+			itemsMap[o.ID][itemID] = entity.OrderItemView{
 				ID:                  itemID,
-				OrderID:             order.ID,
+				OrderID:             o.ID,
 				ProductID:           productID,
 				ProductName:         productName,
 				ProductPrice:        productPrice,
@@ -122,46 +237,20 @@ func (r *OrderPostgreQueryRepo) GetByID(ctx context.Context, id uuid.UUID) (*ent
 		}
 	}
 
-	return &order, nil
-}
-
-const queryGetAllOrder = `SELECT * FROM order_view WHERE deleted_at IS NULL;`
-
-func (r *OrderPostgreQueryRepo) GetAllOrders(ctx context.Context) ([]*entity.Order, error) {
-	stmt, errStmt := r.Conn.PrepareContext(ctx, queryGetAllOrder)
-	if errStmt != nil {
-		return nil, errStmt
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating order rows: %w", err)
 	}
-	defer stmt.Close()
 
-	rows, err := stmt.QueryContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	orders := make([]*entity.Order, 0)
-	for rows.Next() {
-		order := &entity.Order{}
-		err := rows.Scan(
-			&order.ID,
-			&order.UserID,
-			&order.Status,
-			&order.TotalPrice,
-			&order.CreatedAt,
-			&order.UpdatedAt,
-		)
-		if err != nil {
-			continue
+	// Convert maps to slices
+	orders := make([]*entity.OrderView, 0, len(ordersMap))
+	for orderID, order := range ordersMap {
+		items := make([]entity.OrderItemView, 0, len(itemsMap[orderID]))
+		for _, item := range itemsMap[orderID] {
+			items = append(items, item)
 		}
+		order.Items = items
 		orders = append(orders, order)
 	}
 
 	return orders, nil
 }
-
-const queryGetOrderByUserID = `SELECT * FROM order_view WHERE user_id = $1 AND deleted_at IS NULL;`
-
-const queryGetOrderByPaymentID = `SELECT * FROM order_view WHERE payment_id = $1 AND deleted_at IS NULL;`
-
-const queryGetOrderByStatus = `SELECT * FROM order_view WHERE status = $1 AND deleted_at IS NULL;`
