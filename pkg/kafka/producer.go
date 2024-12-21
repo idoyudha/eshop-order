@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -42,10 +43,14 @@ func (s *ProducerServer) Close() {
 	s.Producer.Close()
 }
 
-func (s *ProducerServer) Produce(topic string, key []byte, value []byte) error {
+func (s *ProducerServer) Publish(topic string, key []byte, message interface{}) error {
+	messageBytes, err := json.Marshal(message)
+	if err != nil {
+		return fmt.Errorf("failed to marshal kafka message: %w", err)
+	}
 	return s.Producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Key:            key,
-		Value:          value,
+		Value:          messageBytes,
 	}, nil)
 }

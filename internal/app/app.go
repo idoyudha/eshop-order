@@ -22,6 +22,12 @@ import (
 func Run(cfg *config.Config) {
 	l := logger.New(cfg.Log.Level)
 
+	kafkaProducer, err := kafka.NewKafkaProducer(cfg.Kafka.Broker)
+	if err != nil {
+		l.Fatal("app - Run - kafka.NewKafkaProducer: ", err)
+	}
+	defer kafkaProducer.Close()
+
 	kafkaConsumer, err := kafka.NewKafkaConsumer(cfg.Kafka.Broker)
 	if err != nil {
 		l.Fatal("app - Run - kafka.NewKafkaConsumer: ", err)
@@ -40,6 +46,7 @@ func Run(cfg *config.Config) {
 
 	orderCommandUseCase := usecase.NewOrderCommandUseCase(
 		commandrepo.NewOrderPostgreCommandRepo(postgreSQLCommand),
+		kafkaProducer,
 	)
 
 	orderQueryUseCase := usecase.NewOrderQueryUseCase(
