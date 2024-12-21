@@ -25,14 +25,14 @@ func (u *OrderQueryUseCase) GetAllOrders(ctx context.Context) ([]*entity.OrderVi
 	return u.repoPostgresQuery.GetAll(ctx)
 }
 
-func (u *OrderQueryUseCase) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*entity.OrderView, error) {
+func (u *OrderQueryUseCase) GetOrderByUserID(ctx context.Context, userID uuid.UUID) ([]*entity.OrderView, error) {
 	return u.repoPostgresQuery.GetByUserID(ctx, userID)
 }
 
-func (u *OrderQueryUseCase) GetByPaymentID(ctx context.Context, paymentID uuid.UUID) (*entity.OrderView, error) {
+func (u *OrderQueryUseCase) GetOrderByPaymentID(ctx context.Context, paymentID uuid.UUID) (*entity.OrderView, error) {
 	return u.repoPostgresQuery.GetByPaymentID(ctx, paymentID)
 }
 
-func (u *OrderQueryUseCase) GetByStatus(ctx context.Context, status string) ([]*entity.OrderView, error) {
+func (u *OrderQueryUseCase) GetOrderByStatus(ctx context.Context, status string) ([]*entity.OrderView, error) {
 	return u.repoPostgresQuery.GetByStatus(ctx, status)
 }

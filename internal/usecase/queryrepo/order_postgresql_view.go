@@ -53,7 +53,7 @@ func (r *OrderPostgreQueryRepo) GetByID(ctx context.Context, id uuid.UUID) (*ent
 
 const queryGetAllOrder = baseQueryOrder + ` ORDER BY o.created_at DESC;`
 
-func (r *OrderPostgreQueryRepo) GetAllOrders(ctx context.Context) ([]*entity.OrderView, error) {
+func (r *OrderPostgreQueryRepo) GetAll(ctx context.Context) ([]*entity.OrderView, error) {
 	return r.scanMultipleOrders(ctx, queryGetAllOrder)
 }
 
