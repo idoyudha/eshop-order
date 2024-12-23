@@ -33,13 +33,14 @@ func NewOrderCommandUseCase(repoPostgresCommand OrderPostgreCommandRepo, produce
 }
 
 type stockMovementRequest struct {
-	Items  []orderItemRequest `json:"items"`
-	UserID uuid.UUID          `json:"user_id"`
+	Items   []orderItemRequest `json:"items"`
+	ZipCode string             `json:"zipcode"`
 }
 
 type orderItemRequest struct {
 	ProductID uuid.UUID `json:"product_id"`
 	Quantity  int64     `json:"quantity"`
+	Price     float64   `json:"price"`
 }
 
 func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Order, token string) error {
@@ -57,9 +58,11 @@ func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Ord
 		items = append(items, orderItemRequest{
 			ProductID: item.ProductID,
 			Quantity:  item.ProductQuantity,
+			Price:     item.ProductPrice,
 		})
 	}
 	stockRequest.Items = items
+	stockRequest.ZipCode = order.Address.ZipCode
 
 	requestBody, err := json.Marshal(stockRequest)
 	if err != nil {
@@ -82,6 +85,13 @@ func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Ord
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		// TODO: marshall response body to error struct
+		// body, err := io.ReadAll(resp.Body)
+		// if err != nil {
+		// 	return fmt.Errorf("failed to read warehouse response body: %w", err)
+		// }
+		// defer resp.Body.Close()
+
 		return fmt.Errorf("warehouse service returned status: %d", resp.StatusCode)
 	}
 

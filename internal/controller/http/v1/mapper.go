@@ -19,7 +19,6 @@ func CreateOrderRequestToOrderEntity(req createOrderRequest, userID uuid.UUID) (
 			OrderID:         orderID,
 			ProductID:       item.ProductID,
 			ProductQuantity: item.Quantity,
-			Note:            item.Note,
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		})
