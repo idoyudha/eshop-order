@@ -27,6 +27,16 @@ type Order struct {
 	DeletedAt  time.Time
 }
 
+func (o *Order) GenerateOrderID() error {
+	orderID, err := uuid.NewV7()
+	if err != nil {
+		return err
+	}
+
+	o.ID = orderID
+	return nil
+}
+
 // admin accept payment and set the order status to ON_DELIVERY
 func (o *Order) SetStatusToOnDelivery() {
 	o.Status = ORDER_ON_DELIVERY

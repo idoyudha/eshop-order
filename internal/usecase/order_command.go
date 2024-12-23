@@ -1,10 +1,14 @@
 package usecase
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/idoyudha/eshop-order/config"
 	"github.com/idoyudha/eshop-order/internal/entity"
 	"github.com/idoyudha/eshop-order/pkg/kafka"
 )
@@ -17,18 +21,78 @@ const (
 type OrderCommandUseCase struct {
 	repoPostgresCommand OrderPostgreCommandRepo
 	producer            *kafka.ProducerServer
+	warehouseService    config.WarehouseService
 }
 
-func NewOrderCommandUseCase(repoPostgresCommand OrderPostgreCommandRepo, producer *kafka.ProducerServer) *OrderCommandUseCase {
+func NewOrderCommandUseCase(repoPostgresCommand OrderPostgreCommandRepo, producer *kafka.ProducerServer, warehouseService config.WarehouseService) *OrderCommandUseCase {
 	return &OrderCommandUseCase{
 		repoPostgresCommand,
 		producer,
+		warehouseService,
 	}
 }
 
-func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Order) error {
+type stockMovementRequest struct {
+	Items  []orderItemRequest `json:"items"`
+	UserID uuid.UUID          `json:"user_id"`
+}
+
+type orderItemRequest struct {
+	ProductID uuid.UUID `json:"product_id"`
+	Quantity  int64     `json:"quantity"`
+}
+
+func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Order, token string) error {
 	order.SetStatusToPending()
-	return u.repoPostgresCommand.Insert(ctx, order)
+	err := order.GenerateOrderID()
+	if err != nil {
+		return fmt.Errorf("failed to generate order id: %w", err)
+	}
+
+	// 1. get from warehouse stock
+	warehouseProductURL := fmt.Sprintf("%s/v1/stock-movements/moveout", u.warehouseService.BaseURL)
+	var stockRequest stockMovementRequest
+	var items []orderItemRequest
+	for _, item := range order.Items {
+		items = append(items, orderItemRequest{
+			ProductID: item.ProductID,
+			Quantity:  item.ProductQuantity,
+		})
+	}
+	stockRequest.Items = items
+
+	requestBody, err := json.Marshal(stockRequest)
+	if err != nil {
+		return fmt.Errorf("failed to marshal stock request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, warehouseProductURL, bytes.NewBuffer(requestBody))
+	if err != nil {
+		return fmt.Errorf("failed to create warehouse request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to make warehouse request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("warehouse service returned status: %d", resp.StatusCode)
+	}
+
+	// 2. save order to database write
+	err = u.repoPostgresCommand.Insert(ctx, order)
+	if err != nil {
+		return fmt.Errorf("failed to insert order record: %w", err)
+	}
+
+	// 3. TODO: send event to kafka for database read
+	return nil
 }
 
 type kafkaProductAmountUpdated struct {

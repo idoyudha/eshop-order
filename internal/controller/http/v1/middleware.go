@@ -12,7 +12,10 @@ import (
 	"github.com/idoyudha/eshop-order/config"
 )
 
-const UserIDKey = "userID"
+const (
+	UserIDKey = "userID"
+	TokenKey  = "token"
+)
 
 type authSuccessResponse struct {
 	Code    int          `json:"code"`
@@ -35,6 +38,7 @@ func cognitoMiddleware(auth config.AuthService) gin.HandlerFunc {
 		}
 
 		tokenString = strings.TrimSpace(strings.Replace(tokenString, "Bearer ", "", 1))
+		ctx.Set(TokenKey, tokenString)
 
 		authURL := fmt.Sprintf("%s/v1/auth/%s", auth.BaseURL, tokenString)
 		response, err := http.Get(authURL)

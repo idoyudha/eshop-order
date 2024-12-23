@@ -91,6 +91,13 @@ func (r *orderRoutes) createOrder(ctx *gin.Context) {
 		return
 	}
 
+	token, exist := ctx.Get(TokenKey)
+	if !exist {
+		r.l.Error("not exist", "http - v1 - orderRoutes - createOrder")
+		ctx.JSON(http.StatusInternalServerError, newInternalServerError("token not exist"))
+		return
+	}
+
 	order, err := CreateOrderRequestToOrderEntity(req, userID.(uuid.UUID))
 	if err != nil {
 		r.l.Error(err, "http - v1 - orderRoutes - createOrder")
@@ -98,7 +105,7 @@ func (r *orderRoutes) createOrder(ctx *gin.Context) {
 		return
 	}
 
-	err = r.uoc.CreateOrder(ctx.Request.Context(), &order)
+	err = r.uoc.CreateOrder(ctx.Request.Context(), &order, token.(string))
 	if err != nil {
 		r.l.Error(err, "http - v1 - orderRoutes - createOrder")
 		ctx.JSON(http.StatusInternalServerError, newInternalServerError(err.Error()))

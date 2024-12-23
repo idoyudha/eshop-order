@@ -23,7 +23,7 @@ type (
 	}
 
 	OrderCommand interface {
-		CreateOrder(context.Context, *entity.Order) error
+		CreateOrder(context.Context, *entity.Order, string) error
 		UpdateOrderStatus(context.Context, *entity.Order, bool, bool) error
 		UpdateOrderPaymentID(context.Context, uuid.UUID, uuid.UUID) error
 	}

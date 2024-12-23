@@ -38,7 +38,7 @@ func NewKafkaConsumer(brokerURL string) (*ConsumerServer, error) {
 		if subscribeErr == nil {
 			break
 		}
-		log.Printf("Attempt %d: Failed to subscribe to topics: %v. Retrying in %v...", i+1, subscribeErr, retryDelay)
+		log.Printf("attempt %d: failed to subscribe to topics: %v. retrying in %v...", i+1, subscribeErr, retryDelay)
 		time.Sleep(retryDelay)
 	}
 

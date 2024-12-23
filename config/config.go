@@ -11,6 +11,7 @@ type (
 		PostgreSQLQuery
 		AuthService
 		Kafka
+		WarehouseService
 	}
 
 	App struct {
@@ -46,6 +47,10 @@ type (
 
 	Kafka struct {
 		Broker string `env-required:"true" env:"KAFKA_BROKER"`
+	}
+
+	WarehouseService struct {
+		BaseURL string `env-required:"true" env:"WAREHOUSE_SERVICE"`
 	}
 )
 
