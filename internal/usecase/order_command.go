@@ -59,7 +59,6 @@ func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Ord
 		items = append(items, orderItemRequest{
 			ProductID: item.ProductID,
 			Quantity:  item.ProductQuantity,
-			Price:     item.ProductPrice,
 		})
 	}
 	stockRequest.Items = items

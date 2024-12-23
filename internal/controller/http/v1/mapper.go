@@ -52,7 +52,6 @@ func OrderEntityToCreatedOrderResponse(order entity.Order) orderResponse {
 		items = append(items, itemsOrderResponse{
 			OrderID:   item.OrderID,
 			ProductID: item.ProductID,
-			Price:     item.ProductPrice,
 			Quantity:  item.ProductQuantity,
 			Note:      item.Note,
 		})
