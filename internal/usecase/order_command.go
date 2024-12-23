@@ -38,9 +38,10 @@ type stockMovementRequest struct {
 }
 
 type orderItemRequest struct {
-	ProductID uuid.UUID `json:"product_id"`
-	Quantity  int64     `json:"quantity"`
-	Price     float64   `json:"price"`
+	ProductID   uuid.UUID `json:"product_id"`
+	ProductName string    `json:"product_name"`
+	Quantity    int64     `json:"quantity"`
+	Price       float64   `json:"price"`
 }
 
 func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Order, token string) error {
