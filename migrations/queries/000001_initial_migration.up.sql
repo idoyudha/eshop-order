@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS "orders_view" (
   "status" order_status NOT NULL,
   "total_price" float NOT NULL,
   "payment_id" uuid,
-  "payment_status" payment_status NOT NULL,
+  "payment_status" payment_status,
   "payment_image_url" varchar,
   "payment_admin_note" varchar,
   "created_at" timestamp NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS "orders_view" (
 
 CREATE TABLE IF NOT EXISTS "order_items_view" (
   "id" uuid PRIMARY KEY,
-  "order_id" uuid,
+  "order_view_id" uuid NOT NULL,
   "product_id" uuid NOT NULL,
   "product_name" varchar NOT NULL,
   "product_price" varchar NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS "order_items_view" (
 
 CREATE TABLE IF NOT EXISTS "order_addresses_view" (
   "id" uuid PRIMARY KEY,
-  "order_id" uuid,
+  "order_view_id" uuid NOT NULL,
   "street" varchar NOT NULL,
   "city" varchar NOT NULL,
   "state" varchar NOT NULL,
@@ -59,8 +59,8 @@ CREATE TABLE IF NOT EXISTS "order_addresses_view" (
 );
 
 CREATE INDEX ON "orders_view" ("status");
-CREATE INDEX ON "order_items_view" ("order_id");
-CREATE INDEX ON "order_addresses_view" ("order_id");
+CREATE INDEX ON "order_items_view" ("order_view_id");
+CREATE INDEX ON "order_addresses_view" ("order_view_id");
 
-ALTER TABLE "order_items_view" ADD FOREIGN KEY ("order_id") REFERENCES "orders_view" ("id");
-ALTER TABLE "order_addresses_view" ADD FOREIGN KEY ("order_id") REFERENCES "orders_view" ("id");
+ALTER TABLE "order_items_view" ADD FOREIGN KEY ("order_view_id") REFERENCES "orders_view" ("id");
+ALTER TABLE "order_addresses_view" ADD FOREIGN KEY ("order_view_id") REFERENCES "orders_view" ("id");

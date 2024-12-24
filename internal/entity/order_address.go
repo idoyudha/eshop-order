@@ -20,11 +20,11 @@ type OrderAddress struct {
 }
 
 func (o *OrderAddress) GenerateOrderAddressID() error {
-	orderID, err := uuid.NewV7()
+	id, err := uuid.NewV7()
 	if err != nil {
 		return err
 	}
 
-	o.ID = orderID
+	o.ID = id
 	return nil
 }

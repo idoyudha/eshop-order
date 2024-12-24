@@ -8,7 +8,7 @@ import (
 
 type OrderItemView struct {
 	ID                  uuid.UUID
-	OrderID             uuid.UUID
+	OrderViewID         uuid.UUID
 	ProductID           uuid.UUID
 	ProductName         string
 	ProductPrice        float64
@@ -24,11 +24,11 @@ type OrderItemView struct {
 }
 
 func (o *OrderItemView) GenerateOrderItemViewID() error {
-	orderID, err := uuid.NewV7()
+	id, err := uuid.NewV7()
 	if err != nil {
 		return err
 	}
 
-	o.ID = orderID
+	o.ID = id
 	return nil
 }

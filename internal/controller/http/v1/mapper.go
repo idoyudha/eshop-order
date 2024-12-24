@@ -78,7 +78,7 @@ func OrderViewEntityToGetManyOrderResponse(orders []*entity.OrderView) []orderRe
 		var items []itemsOrderResponse
 		for _, item := range order.Items {
 			items = append(items, itemsOrderResponse{
-				OrderID:   item.OrderID,
+				OrderID:   item.OrderViewID,
 				ProductID: item.ProductID,
 				Price:     item.ProductPrice,
 				Quantity:  item.ProductQuantity,
@@ -91,7 +91,7 @@ func OrderViewEntityToGetManyOrderResponse(orders []*entity.OrderView) []orderRe
 			TotalPrice: order.TotalPrice,
 			Items:      items,
 			Address: addressOrderResponse{
-				OrderID: order.Address.OrderID,
+				OrderID: order.Address.OrderViewID,
 				Street:  order.Address.Street,
 				City:    order.Address.City,
 				State:   order.Address.State,
@@ -107,7 +107,7 @@ func OrderViewEntityToGetOneOrderResponse(order *entity.OrderView) orderResponse
 	var items []itemsOrderResponse
 	for _, item := range order.Items {
 		items = append(items, itemsOrderResponse{
-			OrderID:   item.OrderID,
+			OrderID:   item.OrderViewID,
 			ProductID: item.ProductID,
 			Price:     item.ProductPrice,
 			Quantity:  item.ProductQuantity,
@@ -120,7 +120,7 @@ func OrderViewEntityToGetOneOrderResponse(order *entity.OrderView) orderResponse
 		TotalPrice: order.TotalPrice,
 		Items:      items,
 		Address: addressOrderResponse{
-			OrderID: order.Address.OrderID,
+			OrderID: order.Address.OrderViewID,
 			Street:  order.Address.Street,
 			City:    order.Address.City,
 			State:   order.Address.State,

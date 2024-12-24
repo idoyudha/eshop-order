@@ -21,9 +21,9 @@ func NewOrderPostgreCommandRepo(conn *postgrequery.PostgresQuery) *OrderPostgreQ
 }
 
 const (
-	queryInsertOrdersView       = `INSERT INTO orders_view (id, user_id, status, total_price, payment_id, payment_status, payment_image_url, payment_admin_note, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`
-	queryInserrOrderItemsView   = `INSERT INTO order_items_view (id, order_id, product_id, product_name, product_price, product_quantity, product_image_url, product_description, product_category_id, product_category_name, note, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`
-	queryInsertOrderAddressView = `INSERT INTO order_addresses_view (id, order_id, street, city, state, zip_code, note, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`
+	queryInsertOrdersView       = `INSERT INTO orders_view (id, order_id, user_id, status, total_price, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7);`
+	queryInserrOrderItemsView   = `INSERT INTO order_items_view (id, order_view_id, product_id, product_name, product_price, product_quantity, product_image_url, product_description, product_category_id, product_category_name, note, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`
+	queryInsertOrderAddressView = `INSERT INTO order_addresses_view (id, order_view_id, street, city, state, zip_code, note, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`
 )
 
 func (r *OrderPostgreQueryRepo) Insert(ctx context.Context, order *entity.OrderView) error {
@@ -33,24 +33,34 @@ func (r *OrderPostgreQueryRepo) Insert(ctx context.Context, order *entity.OrderV
 	}
 	defer tx.Rollback()
 
+	// order
 	_, err = tx.ExecContext(ctx, queryInsertOrdersView,
-		order.ID, order.UserID, order.Status, order.TotalPrice, order.PaymentID, order.PaymentStatus, order.PaymentImageURL, order.PaymentAdminNote, order.CreatedAt, order.UpdatedAt)
+		order.ID, order.OrderID, order.UserID, order.Status, order.TotalPrice,
+		order.CreatedAt, order.UpdatedAt)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to insert order view: %w", err)
 	}
 
+	// order items
 	for _, item := range order.Items {
 		_, err = tx.ExecContext(ctx, queryInserrOrderItemsView,
-			item.ID, item.OrderID, item.ProductID, item.ProductName, item.ProductPrice, item.ProductQuantity, item.ProductImageURL, item.ProductDescription, item.ProductCategoryID, item.ProductCategoryName, item.Note, item.CreatedAt, item.UpdatedAt)
+			item.ID, order.ID,
+			item.ProductID, item.ProductName, item.ProductPrice,
+			item.ProductQuantity, item.ProductImageURL, item.ProductDescription,
+			item.ProductCategoryID, item.ProductCategoryName, item.Note,
+			item.CreatedAt, item.UpdatedAt)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to insert order item view: %w", err)
 		}
 	}
 
+	// order address
 	_, err = tx.ExecContext(ctx, queryInsertOrderAddressView,
-		order.Address.ID, order.ID, order.Address.Street, order.Address.City, order.Address.State, order.Address.ZipCode, order.Address.Note, order.Address.CreatedAt, order.Address.UpdatedAt)
+		order.Address.ID, order.ID, order.Address.Street,
+		order.Address.City, order.Address.State, order.Address.ZipCode,
+		order.Address.Note, order.Address.CreatedAt, order.Address.UpdatedAt)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to insert order address view: %w", err)
 	}
 
 	return tx.Commit()
@@ -156,19 +166,19 @@ func (r *OrderPostgreQueryRepo) scanSingleOrder(ctx context.Context, query strin
 		if order == nil {
 			order = &o
 			order.Address = entity.OrderAddressView{
-				ID:      addressID,
-				OrderID: order.ID,
-				Street:  street,
-				City:    city,
-				State:   state,
-				ZipCode: zipCode,
-				Note:    addressNote,
+				ID:          addressID,
+				OrderViewID: order.ID,
+				Street:      street,
+				City:        city,
+				State:       state,
+				ZipCode:     zipCode,
+				Note:        addressNote,
 			}
 		}
 
 		items[itemID] = entity.OrderItemView{
 			ID:                  itemID,
-			OrderID:             order.ID,
+			OrderViewID:         order.ID,
 			ProductID:           productID,
 			ProductName:         productName,
 			ProductPrice:        productPrice,
@@ -244,13 +254,13 @@ func (r *OrderPostgreQueryRepo) scanMultipleOrders(ctx context.Context, query st
 		if _, exists := ordersMap[o.ID]; !exists {
 			ordersMap[o.ID] = &o
 			ordersMap[o.ID].Address = entity.OrderAddressView{
-				ID:      addressID,
-				OrderID: o.ID,
-				Street:  street,
-				City:    city,
-				State:   state,
-				ZipCode: zipCode,
-				Note:    addressNote,
+				ID:          addressID,
+				OrderViewID: o.ID,
+				Street:      street,
+				City:        city,
+				State:       state,
+				ZipCode:     zipCode,
+				Note:        addressNote,
 			}
 			itemsMap[o.ID] = make(map[uuid.UUID]entity.OrderItemView)
 		}
@@ -259,7 +269,7 @@ func (r *OrderPostgreQueryRepo) scanMultipleOrders(ctx context.Context, query st
 		if _, exists := itemsMap[o.ID][itemID]; !exists {
 			itemsMap[o.ID][itemID] = entity.OrderItemView{
 				ID:                  itemID,
-				OrderID:             o.ID,
+				OrderViewID:         o.ID,
 				ProductID:           productID,
 				ProductName:         productName,
 				ProductPrice:        productPrice,

@@ -19,13 +19,15 @@ func NewOrderQueryUseCase(repoPostgresQuery OrderPostgreQueryRepo) *OrderQueryUs
 }
 
 func (u *OrderQueryUseCase) CreateOrderView(ctx context.Context, order *entity.OrderView) error {
+	order.SetStatusToPending()
+
 	err := order.GenerateOrderViewID()
 	if err != nil {
 		return fmt.Errorf("failed to generate order view id: %w", err)
 	}
 
-	for _, item := range order.Items {
-		err := item.GenerateOrderItemViewID()
+	for i := range order.Items {
+		err := order.Items[i].GenerateOrderItemViewID()
 		if err != nil {
 			return fmt.Errorf("failed to generate order view item id: %w", err)
 		}

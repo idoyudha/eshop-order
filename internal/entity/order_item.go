@@ -18,11 +18,11 @@ type OrderItem struct {
 }
 
 func (o *OrderItem) GenerateOrderItemID() error {
-	orderID, err := uuid.NewV7()
+	id, err := uuid.NewV7()
 	if err != nil {
 		return err
 	}
 
-	o.ID = orderID
+	o.ID = id
 	return nil
 }

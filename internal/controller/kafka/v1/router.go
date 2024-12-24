@@ -37,6 +37,7 @@ func KafkaNewRouter(
 	routes := &kafkaConsumerRoutes{
 		ucoq: ucoq,
 		l:    l,
+		p:    p,
 	}
 
 	// Set up a channel for handling Ctrl-C, etc
@@ -52,11 +53,13 @@ func KafkaNewRouter(
 			run = false
 			return nil
 		default:
-			ev, err := c.Consumer.ReadMessage(100 * time.Millisecond)
+			// l.Debug("Attempting to read message...")
+			ev, err := c.Consumer.ReadMessage(3 * time.Second)
 			if err != nil {
 				// log.Println("CONSUME CART SERVICE!!")
 				// Errors are informational and automatically handled by the consumer
-				if err.(kafka.Error).Code() == kafka.ErrTimedOut {
+				if kerr, ok := err.(kafka.Error); ok && kerr.Code() == kafka.ErrTimedOut {
+					// l.Debug("Timeout waiting for message, continuing...")
 					continue
 				}
 				l.Error("Error reading message: ", err)
@@ -91,6 +94,12 @@ type getProductResponse struct {
 	CategoryID  string  `json:"category_id"`
 }
 
+type restSuccess struct {
+	Code    int                `json:"code"`
+	Data    getProductResponse `json:"data"`
+	Message string             `json:"message"`
+}
+
 func (r *kafkaConsumerRoutes) handleOrderViewCreated(msg *kafka.Message) error {
 	var message dto.KafkaOrderCreated
 
@@ -120,23 +129,22 @@ func (r *kafkaConsumerRoutes) handleOrderViewCreated(msg *kafka.Message) error {
 			return fmt.Errorf("failed to make product request, status not OK: %w", err)
 		}
 
-		var product getProductResponse
-		if err := json.NewDecoder(resp.Body).Decode(&product); err != nil {
+		var restSuccess restSuccess
+		if err := json.NewDecoder(resp.Body).Decode(&restSuccess); err != nil {
 			return fmt.Errorf("failed to decode product response: %w", err)
 		}
 
 		items = append(items, entity.OrderItemView{
-			ProductName:        product.Name,
-			ProductImageURL:    product.ImageURL,
-			ProductDescription: product.Description,
-			ProductCategoryID:  uuid.MustParse(product.CategoryID),
-			ProductPrice:       product.Price,
+			ProductName:        restSuccess.Data.Name,
+			ProductImageURL:    restSuccess.Data.ImageURL,
+			ProductDescription: restSuccess.Data.Description,
+			ProductCategoryID:  uuid.MustParse(restSuccess.Data.CategoryID),
+			ProductPrice:       restSuccess.Data.Price,
 		})
 	}
 
 	orderViewEntity := kafkaOrderCreatedToOrderView(&message)
 	orderViewEntity.Items = items
-
 	err := r.ucoq.CreateOrderView(context.Background(), &orderViewEntity)
 	if err != nil {
 		r.l.Error(err, "http - v1 - kafkaConsumerRoutes - handleOrderViewCreated")
@@ -152,7 +160,6 @@ func kafkaOrderCreatedToOrderView(msg *dto.KafkaOrderCreated) entity.OrderView {
 		UserID:     msg.UserID,
 		TotalPrice: msg.TotalPrice,
 		Address: entity.OrderAddressView{
-			OrderID:   msg.Address.OrderID,
 			Street:    msg.Address.Street,
 			City:      msg.Address.City,
 			State:     msg.Address.State,
