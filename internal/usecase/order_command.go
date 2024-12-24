@@ -52,14 +52,24 @@ func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Ord
 		return fmt.Errorf("failed to generate order id: %w", err)
 	}
 
+	err = order.Address.GenerateOrderAddressID()
+	if err != nil {
+		return fmt.Errorf("failed to generate order address id: %w", err)
+	}
+
 	// 1. get from warehouse stock
 	warehouseProductURL := fmt.Sprintf("%s/v1/stock-movements/moveout", u.warehouseService.BaseURL)
 	var stockRequest stockMovementRequest
 	var items []orderItemRequest
-	for _, item := range order.Items {
+
+	for i := range order.Items {
+		err := order.Items[i].GenerateOrderItemID()
+		if err != nil {
+			return fmt.Errorf("failed to generate order item id: %w", err)
+		}
 		items = append(items, orderItemRequest{
-			ProductID: item.ProductID,
-			Quantity:  item.ProductQuantity,
+			ProductID: order.Items[i].ProductID,
+			Quantity:  order.Items[i].ProductQuantity,
 		})
 	}
 	stockRequest.Items = items
@@ -85,7 +95,7 @@ func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Ord
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusCreated {
 		// TODO: marshall response body to error struct
 		// body, err := io.ReadAll(resp.Body)
 		// if err != nil {
@@ -99,10 +109,11 @@ func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Ord
 	// 2. save order to database write
 	err = u.repoPostgresCommand.Insert(ctx, order)
 	if err != nil {
+		// TODO: handle error, send delete request to warehouse stock movement
 		return fmt.Errorf("failed to insert order record: %w", err)
 	}
 
-	// 3. TODO: send event to kafka for database read
+	// 3. send event to kafka for database read
 	message := dto.OrderEntityToKafkaOrderCreatedMessage(order)
 	err = u.producer.Publish(
 		constant.OrderCreatedTopic,
