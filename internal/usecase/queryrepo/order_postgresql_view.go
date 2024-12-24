@@ -20,6 +20,42 @@ func NewOrderPostgreCommandRepo(conn *postgrequery.PostgresQuery) *OrderPostgreQ
 	}
 }
 
+const (
+	queryInsertOrdersView       = `INSERT INTO orders_view (id, user_id, status, total_price, payment_id, payment_status, payment_image_url, payment_admin_note, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`
+	queryInserrOrderItemsView   = `INSERT INTO order_items_view (id, order_id, product_id, product_name, product_price, product_quantity, product_image_url, product_description, product_category_id, product_category_name, note, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`
+	queryInsertOrderAddressView = `INSERT INTO order_addresses_view (id, order_id, street, city, state, zip_code, note, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`
+)
+
+func (r *OrderPostgreQueryRepo) Insert(ctx context.Context, order *entity.OrderView) error {
+	tx, err := r.Conn.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	_, err = tx.ExecContext(ctx, queryInsertOrdersView,
+		order.ID, order.UserID, order.Status, order.TotalPrice, order.PaymentID, order.PaymentStatus, order.PaymentImageURL, order.PaymentAdminNote, order.CreatedAt, order.UpdatedAt)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range order.Items {
+		_, err = tx.ExecContext(ctx, queryInserrOrderItemsView,
+			item.ID, item.OrderID, item.ProductID, item.ProductName, item.ProductPrice, item.ProductQuantity, item.ProductImageURL, item.ProductDescription, item.ProductCategoryID, item.ProductCategoryName, item.Note, item.CreatedAt, item.UpdatedAt)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = tx.ExecContext(ctx, queryInsertOrderAddressView,
+		order.Address.ID, order.ID, order.Address.Street, order.Address.City, order.Address.State, order.Address.ZipCode, order.Address.Note, order.Address.CreatedAt, order.Address.UpdatedAt)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
 const baseQueryOrder = `
 	SELECT 
         o.*,
@@ -106,7 +142,7 @@ func (r *OrderPostgreQueryRepo) scanSingleOrder(ctx context.Context, query strin
 
 		err := rows.Scan(
 			&o.ID, &o.UserID, &o.Status, &o.TotalPrice, &o.PaymentID,
-			&o.PaymentStatus, &o.PaymentImageUrl, &o.PaymentAdminNote,
+			&o.PaymentStatus, &o.PaymentImageURL, &o.PaymentAdminNote,
 			&o.CreatedAt, &o.UpdatedAt, &o.DeletedAt,
 			&addressID, &street, &city, &state, &zipCode, &addressNote,
 			&itemID, &productID, &productName, &productPrice, &productQuantity,
@@ -137,10 +173,10 @@ func (r *OrderPostgreQueryRepo) scanSingleOrder(ctx context.Context, query strin
 			ProductName:         productName,
 			ProductPrice:        productPrice,
 			ProductQuantity:     productQuantity,
-			ProductImageUrl:     productImageURL,
+			ProductImageURL:     productImageURL,
 			ProductDescription:  productDescription,
 			ProductCategoryID:   productCategoryID,
-			ProdcutCategoryName: productCategoryName,
+			ProductCategoryName: productCategoryName,
 			Note:                itemNote,
 		}
 
@@ -193,7 +229,7 @@ func (r *OrderPostgreQueryRepo) scanMultipleOrders(ctx context.Context, query st
 
 		err := rows.Scan(
 			&o.ID, &o.UserID, &o.Status, &o.TotalPrice, &o.PaymentID,
-			&o.PaymentStatus, &o.PaymentImageUrl, &o.PaymentAdminNote,
+			&o.PaymentStatus, &o.PaymentImageURL, &o.PaymentAdminNote,
 			&o.CreatedAt, &o.UpdatedAt, &o.DeletedAt,
 			&addressID, &street, &city, &state, &zipCode, &addressNote,
 			&itemID, &productID, &productName, &productPrice, &productQuantity,
@@ -228,10 +264,10 @@ func (r *OrderPostgreQueryRepo) scanMultipleOrders(ctx context.Context, query st
 				ProductName:         productName,
 				ProductPrice:        productPrice,
 				ProductQuantity:     productQuantity,
-				ProductImageUrl:     productImageURL,
+				ProductImageURL:     productImageURL,
 				ProductDescription:  productDescription,
 				ProductCategoryID:   productCategoryID,
-				ProdcutCategoryName: productCategoryName,
+				ProductCategoryName: productCategoryName,
 				Note:                itemNote,
 			}
 		}

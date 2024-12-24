@@ -13,7 +13,7 @@ type OrderView struct {
 	TotalPrice       float64
 	PaymentID        uuid.UUID
 	PaymentStatus    string
-	PaymentImageUrl  string
+	PaymentImageURL  string
 	PaymentAdminNote string
 	Items            []OrderItemView
 	Address          OrderAddressView

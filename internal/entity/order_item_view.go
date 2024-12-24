@@ -13,10 +13,10 @@ type OrderItemView struct {
 	ProductName         string
 	ProductPrice        float64
 	ProductQuantity     int64
-	ProductImageUrl     string
+	ProductImageURL     string
 	ProductDescription  string
 	ProductCategoryID   uuid.UUID
-	ProdcutCategoryName string
+	ProductCategoryName string
 	Note                string
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
