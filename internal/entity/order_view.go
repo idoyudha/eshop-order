@@ -22,3 +22,13 @@ type OrderView struct {
 	UpdatedAt        time.Time
 	DeletedAt        time.Time
 }
+
+func (o *OrderView) GenerateOrderViewID() error {
+	orderID, err := uuid.NewV7()
+	if err != nil {
+		return err
+	}
+
+	o.ID = orderID
+	return nil
+}

@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/idoyudha/eshop-order/internal/constant"
 )
 
 const (
-	SaleGroup         = "sale-group"
-	OrderCreatedTopic = "order-created"
-	maxRetries        = 5
-	retryDelay        = 2 * time.Second
+	SaleGroup  = "sale-group"
+	maxRetries = 5
+	retryDelay = 2 * time.Second
 )
 
 type ConsumerServer struct {
@@ -35,7 +35,7 @@ func NewKafkaConsumer(brokerURL string) (*ConsumerServer, error) {
 
 	var subscribeErr error
 	for i := 0; i < maxRetries; i++ {
-		subscribeErr = c.SubscribeTopics([]string{OrderCreatedTopic}, nil)
+		subscribeErr = c.SubscribeTopics([]string{constant.OrderCreatedTopic}, nil)
 		if subscribeErr == nil {
 			break
 		}

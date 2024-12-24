@@ -18,3 +18,13 @@ type OrderAddressView struct {
 	UpdatedAt time.Time
 	DeletedAt time.Time
 }
+
+func (o *OrderAddressView) GenerateOrderAddressViewID() error {
+	orderID, err := uuid.NewV7()
+	if err != nil {
+		return err
+	}
+
+	o.ID = orderID
+	return nil
+}

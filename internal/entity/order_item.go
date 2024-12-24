@@ -16,3 +16,13 @@ type OrderItem struct {
 	UpdatedAt       time.Time
 	DeletedAt       time.Time
 }
+
+func (o *OrderItem) GenerateOrderItemID() error {
+	orderID, err := uuid.NewV7()
+	if err != nil {
+		return err
+	}
+
+	o.ID = orderID
+	return nil
+}

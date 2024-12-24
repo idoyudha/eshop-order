@@ -12,16 +12,10 @@ type KafkaOrderCreated struct {
 }
 
 type KafkaOrderItemsCreated struct {
-	OrderID             uuid.UUID `json:"order_id"`
-	ProductID           uuid.UUID `json:"product_id"`
-	ProductName         string    `json:"product_name"`
-	ProductPrice        float64   `json:"product_price"`
-	ProductQuantity     int64     `json:"product_quantity"`
-	ProductImageURL     string    `json:"product_image_url"`
-	ProductDescription  string    `json:"product_description"`
-	ProductCategoryID   uuid.UUID `json:"product_category_id"`
-	ProductCategoryName string    `json:"product_category_name"`
-	Note                string    `json:"note"`
+	OrderID         uuid.UUID `json:"order_id"`
+	ProductID       uuid.UUID `json:"product_id"`
+	ProductQuantity int64     `json:"product_quantity"`
+	Note            string    `json:"note"`
 }
 
 type KafkaOrderAddressCreated struct {

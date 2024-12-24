@@ -21,7 +21,11 @@ type OrderCommandUseCase struct {
 	warehouseService    config.WarehouseService
 }
 
-func NewOrderCommandUseCase(repoPostgresCommand OrderPostgreCommandRepo, producer *kafka.ProducerServer, warehouseService config.WarehouseService) *OrderCommandUseCase {
+func NewOrderCommandUseCase(
+	repoPostgresCommand OrderPostgreCommandRepo,
+	producer *kafka.ProducerServer,
+	warehouseService config.WarehouseService,
+) *OrderCommandUseCase {
 	return &OrderCommandUseCase{
 		repoPostgresCommand,
 		producer,

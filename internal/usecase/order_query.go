@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/idoyudha/eshop-order/internal/entity"
@@ -18,6 +19,23 @@ func NewOrderQueryUseCase(repoPostgresQuery OrderPostgreQueryRepo) *OrderQueryUs
 }
 
 func (u *OrderQueryUseCase) CreateOrderView(ctx context.Context, order *entity.OrderView) error {
+	err := order.GenerateOrderViewID()
+	if err != nil {
+		return fmt.Errorf("failed to generate order view id: %w", err)
+	}
+
+	for _, item := range order.Items {
+		err := item.GenerateOrderItemViewID()
+		if err != nil {
+			return fmt.Errorf("failed to generate order view item id: %w", err)
+		}
+	}
+
+	err = order.Address.GenerateOrderAddressViewID()
+	if err != nil {
+		return fmt.Errorf("failed to generate order view address id: %w", err)
+	}
+
 	return u.repoPostgresQuery.Insert(ctx, order)
 }
 
