@@ -9,13 +9,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/idoyudha/eshop-order/config"
+	"github.com/idoyudha/eshop-order/internal/constant"
+	"github.com/idoyudha/eshop-order/internal/dto"
 	"github.com/idoyudha/eshop-order/internal/entity"
 	"github.com/idoyudha/eshop-order/pkg/kafka"
-)
-
-const (
-	ProductQuantityUpdatedTopic = "product-quantity-updated"
-	SaleCreated                 = "sale-created"
 )
 
 type OrderCommandUseCase struct {
@@ -102,6 +99,16 @@ func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Ord
 	}
 
 	// 3. TODO: send event to kafka for database read
+	message := dto.OrderEntityToKafkaOrderCreatedMessage(order)
+	err = u.producer.Publish(
+		constant.OrderCreatedTopic,
+		[]byte(message.OrderID.String()),
+		message,
+	)
+	if err != nil {
+		// TODO: handle error, cancel the update if failed. or try use retry mechanism
+		return fmt.Errorf("failed to produce kafka message: %w", err)
+	}
 	return nil
 }
 
@@ -132,7 +139,7 @@ func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *enti
 			}
 
 			err = u.producer.Publish(
-				ProductQuantityUpdatedTopic,
+				constant.ProductQuantityUpdatedTopic,
 				[]byte(item.ProductID.String()),
 				message,
 			)

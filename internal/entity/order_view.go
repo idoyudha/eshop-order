@@ -8,6 +8,7 @@ import (
 
 type OrderView struct {
 	ID               uuid.UUID
+	OrderID          uuid.UUID
 	UserID           uuid.UUID
 	Status           string
 	TotalPrice       float64
