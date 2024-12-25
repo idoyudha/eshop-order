@@ -62,7 +62,7 @@ func Run(cfg *config.Config) {
 	// Kafka Consumer
 	kafkaErrChan := make(chan error, 1)
 	go func() {
-		if err := v1Kafka.KafkaNewRouter(orderQueryUseCase, l, kafkaConsumer, cfg.ProductService); err != nil {
+		if err := v1Kafka.KafkaNewRouter(orderQueryUseCase, orderCommandUseCase, l, kafkaConsumer, cfg.ProductService); err != nil {
 			kafkaErrChan <- err
 		}
 	}()

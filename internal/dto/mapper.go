@@ -1,6 +1,10 @@
 package dto
 
-import "github.com/idoyudha/eshop-order/internal/entity"
+import (
+	"time"
+
+	"github.com/idoyudha/eshop-order/internal/entity"
+)
 
 func OrderEntityToKafkaOrderCreatedMessage(order *entity.Order) KafkaOrderCreated {
 	return KafkaOrderCreated{
@@ -31,4 +35,15 @@ func orderItemEntityToKafkaOrderItemsCreated(items []entity.OrderItem) []KafkaOr
 	}
 
 	return kafkaItems
+}
+
+func PaymentMessageToOrderViewEntity(message KafkaPaymentCreated) entity.OrderView {
+	return entity.OrderView{
+		OrderID:          message.OrderID,
+		PaymentID:        message.PaymentID,
+		PaymentStatus:    message.Status,
+		PaymentImageURL:  message.ImageURL,
+		PaymentAdminNote: message.Note,
+		UpdatedAt:        time.Now(),
+	}
 }

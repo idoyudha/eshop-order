@@ -41,6 +41,10 @@ func (u *OrderQueryUseCase) CreateOrderView(ctx context.Context, order *entity.O
 	return u.repoPostgresQuery.Insert(ctx, order)
 }
 
+func (u *OrderQueryUseCase) UpdateOrderViewPayment(ctx context.Context, order *entity.OrderView) error {
+	return u.repoPostgresQuery.UpdatePayment(ctx, order)
+}
+
 func (u *OrderQueryUseCase) GetOrderByID(ctx context.Context, id uuid.UUID) (*entity.OrderView, error) {
 	return u.repoPostgresQuery.GetByID(ctx, id)
 }

@@ -16,6 +16,7 @@ type (
 
 	OrderPostgreQueryRepo interface {
 		Insert(context.Context, *entity.OrderView) error
+		UpdatePayment(context.Context, *entity.OrderView) error
 		GetByID(context.Context, uuid.UUID) (*entity.OrderView, error)
 		GetAll(context.Context) ([]*entity.OrderView, error)
 		GetByUserID(context.Context, uuid.UUID) ([]*entity.OrderView, error)
@@ -31,6 +32,7 @@ type (
 
 	OrderQuery interface {
 		CreateOrderView(context.Context, *entity.OrderView) error
+		UpdateOrderViewPayment(context.Context, *entity.OrderView) error
 		GetOrderByID(context.Context, uuid.UUID) (*entity.OrderView, error)
 		GetAllOrders(context.Context) ([]*entity.OrderView, error)
 		GetOrderByUserID(context.Context, uuid.UUID) ([]*entity.OrderView, error)

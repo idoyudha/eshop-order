@@ -35,7 +35,10 @@ func NewKafkaConsumer(brokerURL string) (*ConsumerServer, error) {
 
 	var subscribeErr error
 	for i := 0; i < maxRetries; i++ {
-		subscribeErr = c.SubscribeTopics([]string{constant.OrderCreatedTopic}, nil)
+		subscribeErr = c.SubscribeTopics([]string{
+			constant.OrderCreatedTopic,
+			constant.PaymentUpdatedTopic,
+		}, nil)
 		if subscribeErr == nil {
 			break
 		}

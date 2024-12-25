@@ -24,18 +24,21 @@ import (
 
 type kafkaConsumerRoutes struct {
 	ucoq usecase.OrderQuery
+	ucoc usecase.OrderCommand
 	l    logger.Interface
 	p    config.ProductService
 }
 
 func KafkaNewRouter(
 	ucoq usecase.OrderQuery,
+	ucoc usecase.OrderCommand,
 	l logger.Interface,
 	c *kafkaConSrv.ConsumerServer,
 	p config.ProductService,
 ) error {
 	routes := &kafkaConsumerRoutes{
 		ucoq: ucoq,
+		ucoc: ucoc,
 		l:    l,
 		p:    p,
 	}
@@ -100,6 +103,25 @@ type restSuccess struct {
 	Message string             `json:"message"`
 }
 
+func kafkaOrderCreatedToOrderView(msg *dto.KafkaOrderCreated) entity.OrderView {
+	return entity.OrderView{
+		OrderID:    msg.OrderID,
+		UserID:     msg.UserID,
+		TotalPrice: msg.TotalPrice,
+		Address: entity.OrderAddressView{
+			Street:    msg.Address.Street,
+			City:      msg.Address.City,
+			State:     msg.Address.State,
+			ZipCode:   msg.Address.ZipCode,
+			Note:      msg.Address.Note,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+}
+
 func (r *kafkaConsumerRoutes) handleOrderViewCreated(msg *kafka.Message) error {
 	var message dto.KafkaOrderCreated
 
@@ -154,21 +176,28 @@ func (r *kafkaConsumerRoutes) handleOrderViewCreated(msg *kafka.Message) error {
 	return nil
 }
 
-func kafkaOrderCreatedToOrderView(msg *dto.KafkaOrderCreated) entity.OrderView {
-	return entity.OrderView{
-		OrderID:    msg.OrderID,
-		UserID:     msg.UserID,
-		TotalPrice: msg.TotalPrice,
-		Address: entity.OrderAddressView{
-			Street:    msg.Address.Street,
-			City:      msg.Address.City,
-			State:     msg.Address.State,
-			ZipCode:   msg.Address.ZipCode,
-			Note:      msg.Address.Note,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		},
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+func (r *kafkaConsumerRoutes) handleOrderPaymentUpdated(msg *kafka.Message) error {
+	var message dto.KafkaPaymentCreated
+
+	if err := json.Unmarshal(msg.Value, &message); err != nil {
+		r.l.Error(err, "http - v1 - kafkaConsumerRoutes - handleOrderPaymentUpdated")
+		return err
 	}
+
+	// 1. update order payment
+	err := r.ucoc.UpdateOrderPaymentID(context.Background(), message.OrderID, message.PaymentID)
+	if err != nil {
+		r.l.Error(err, "http - v1 - kafkaConsumerRoutes - handleOrderPaymentUpdated")
+		return fmt.Errorf("failed to update order payment: %w", err)
+	}
+
+	// 2. update order view
+	orderViewEntity := dto.PaymentMessageToOrderViewEntity(message)
+	err = r.ucoq.UpdateOrderViewPayment(context.Background(), &orderViewEntity)
+	if err != nil {
+		r.l.Error(err, "http - v1 - kafkaConsumerRoutes - handleOrderPaymentUpdated")
+		return fmt.Errorf("failed to update order view: %w", err)
+	}
+
+	return nil
 }

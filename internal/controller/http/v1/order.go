@@ -29,6 +29,7 @@ func newOrderRoutes(
 		h.POST("", r.createOrder)
 		h.GET("/user", r.getOrderByUserID)
 		h.GET("/:id", r.getOrderByID)
+		h.GET("", r.getAllOrders)
 	}
 }
 
@@ -148,6 +149,19 @@ func (r *orderRoutes) getOrderByUserID(ctx *gin.Context) {
 	orders, err := r.uoq.GetOrderByUserID(ctx.Request.Context(), userID.(uuid.UUID))
 	if err != nil {
 		r.l.Error(err, "http - v1 - orderRoutes - getOrderByUserID")
+		ctx.JSON(http.StatusInternalServerError, newInternalServerError(err.Error()))
+		return
+	}
+
+	response := OrderViewEntityToGetManyOrderResponse(orders)
+
+	ctx.JSON(http.StatusOK, newGetSuccess(response))
+}
+
+func (r *orderRoutes) getAllOrders(ctx *gin.Context) {
+	orders, err := r.uoq.GetAllOrders(ctx.Request.Context())
+	if err != nil {
+		r.l.Error(err, "http - v1 - orderRoutes - getAllOrders")
 		ctx.JSON(http.StatusInternalServerError, newInternalServerError(err.Error()))
 		return
 	}
