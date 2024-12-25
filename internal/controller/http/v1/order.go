@@ -52,6 +52,7 @@ type createAddressOrderRequest struct {
 }
 
 type orderResponse struct {
+	ID         uuid.UUID            `json:"id"`
 	Status     string               `json:"status"`
 	TotalPrice float64              `json:"total_price"`
 	Items      []itemsOrderResponse `json:"items"`

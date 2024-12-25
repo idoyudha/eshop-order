@@ -67,8 +67,18 @@ func (r *OrderPostgreQueryRepo) Insert(ctx context.Context, order *entity.OrderV
 }
 
 const baseQueryOrder = `
-	SELECT 
-        o.*,
+    SELECT 
+        o.id,
+        o.order_id,
+        o.user_id,
+        o.status,
+        o.total_price,
+        o.payment_id,
+        o.payment_status,
+        o.payment_image_url,
+        o.payment_admin_note,
+        o.created_at,
+        o.updated_at,
         oa.id as address_id,
         oa.street as address_street,
         oa.city as address_city,
@@ -86,9 +96,9 @@ const baseQueryOrder = `
         oi.product_category_name,
         oi.note as item_note
     FROM orders_view o
-    LEFT JOIN order_addresses_view oa ON o.id = oa.order_id
-    LEFT JOIN order_items_view oi ON o.id = oi.order_id
-    o.deleted_at IS NULL
+    LEFT JOIN order_addresses_view oa ON o.id = oa.order_view_id
+    LEFT JOIN order_items_view oi ON o.id = oi.order_view_id
+    WHERE o.deleted_at IS NULL
 `
 
 const queryGetOrderByID = baseQueryOrder + ` AND o.id = $1;`
@@ -151,9 +161,9 @@ func (r *OrderPostgreQueryRepo) scanSingleOrder(ctx context.Context, query strin
 		)
 
 		err := rows.Scan(
-			&o.ID, &o.UserID, &o.Status, &o.TotalPrice, &o.PaymentID,
+			&o.ID, &o.OrderID, &o.UserID, &o.Status, &o.TotalPrice, &o.PaymentID,
 			&o.PaymentStatus, &o.PaymentImageURL, &o.PaymentAdminNote,
-			&o.CreatedAt, &o.UpdatedAt, &o.DeletedAt,
+			&o.CreatedAt, &o.UpdatedAt,
 			&addressID, &street, &city, &state, &zipCode, &addressNote,
 			&itemID, &productID, &productName, &productPrice, &productQuantity,
 			&productImageURL, &productDescription, &productCategoryID,
@@ -224,6 +234,11 @@ func (r *OrderPostgreQueryRepo) scanMultipleOrders(ctx context.Context, query st
 		var (
 			// order fields
 			o entity.OrderView
+			// nullable fields
+			nullablePaymentID     sql.NullString
+			nullablePaymentStatus sql.NullString
+			nullablePaymentImage  sql.NullString
+			nullablePaymentNote   sql.NullString
 			// address fields
 			addressID                                 uuid.UUID
 			street, city, state, zipCode, addressNote string
@@ -238,16 +253,54 @@ func (r *OrderPostgreQueryRepo) scanMultipleOrders(ctx context.Context, query st
 		)
 
 		err := rows.Scan(
-			&o.ID, &o.UserID, &o.Status, &o.TotalPrice, &o.PaymentID,
-			&o.PaymentStatus, &o.PaymentImageURL, &o.PaymentAdminNote,
-			&o.CreatedAt, &o.UpdatedAt, &o.DeletedAt,
-			&addressID, &street, &city, &state, &zipCode, &addressNote,
-			&itemID, &productID, &productName, &productPrice, &productQuantity,
-			&productImageURL, &productDescription, &productCategoryID,
-			&productCategoryName, &itemNote,
+			&o.ID,
+			&o.OrderID,
+			&o.UserID,
+			&o.Status,
+			&o.TotalPrice,
+			&nullablePaymentID,
+			&nullablePaymentStatus,
+			&nullablePaymentImage,
+			&nullablePaymentNote,
+			&o.CreatedAt,
+			&o.UpdatedAt,
+			&addressID,
+			&street,
+			&city,
+			&state,
+			&zipCode,
+			&addressNote,
+			&itemID,
+			&productID,
+			&productName,
+			&productPrice,
+			&productQuantity,
+			&productImageURL,
+			&productDescription,
+			&productCategoryID,
+			&productCategoryName,
+			&itemNote,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan order: %w", err)
+		}
+
+		// convert nullable fields
+		if nullablePaymentID.Valid {
+			paymentID, err := uuid.Parse(nullablePaymentID.String)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse payment ID: %w", err)
+			}
+			o.PaymentID = paymentID
+		}
+		if nullablePaymentStatus.Valid {
+			o.PaymentStatus = nullablePaymentStatus.String
+		}
+		if nullablePaymentImage.Valid {
+			o.PaymentImageURL = nullablePaymentImage.String
+		}
+		if nullablePaymentNote.Valid {
+			o.PaymentAdminNote = nullablePaymentNote.String
 		}
 
 		// if this is the first time we're seeing this order
