@@ -111,7 +111,9 @@ func (r *orderRoutes) createOrder(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newCreateSuccess(order))
+	response := OrderEntityToCreatedOrderResponse(order)
+
+	ctx.JSON(http.StatusCreated, newCreateSuccess(response))
 }
 
 func (r *orderRoutes) getOrderByID(ctx *gin.Context) {
