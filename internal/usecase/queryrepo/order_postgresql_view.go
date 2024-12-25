@@ -146,6 +146,11 @@ func (r *OrderPostgreQueryRepo) scanSingleOrder(ctx context.Context, query strin
 		var (
 			// order fields
 			o entity.OrderView
+			// nullable fields
+			nullablePaymentID     sql.NullString
+			nullablePaymentStatus sql.NullString
+			nullablePaymentImage  sql.NullString
+			nullablePaymentNote   sql.NullString
 			// address fields
 			addressID                                 uuid.UUID
 			street, city, state, zipCode, addressNote string
@@ -161,16 +166,54 @@ func (r *OrderPostgreQueryRepo) scanSingleOrder(ctx context.Context, query strin
 		)
 
 		err := rows.Scan(
-			&o.ID, &o.OrderID, &o.UserID, &o.Status, &o.TotalPrice, &o.PaymentID,
-			&o.PaymentStatus, &o.PaymentImageURL, &o.PaymentAdminNote,
-			&o.CreatedAt, &o.UpdatedAt,
-			&addressID, &street, &city, &state, &zipCode, &addressNote,
-			&itemID, &productID, &productName, &productPrice, &productQuantity,
-			&productImageURL, &productDescription, &productCategoryID,
-			&productCategoryName, &itemNote,
+			&o.ID,
+			&o.OrderID,
+			&o.UserID,
+			&o.Status,
+			&o.TotalPrice,
+			&nullablePaymentID,
+			&nullablePaymentStatus,
+			&nullablePaymentImage,
+			&nullablePaymentNote,
+			&o.CreatedAt,
+			&o.UpdatedAt,
+			&addressID,
+			&street,
+			&city,
+			&state,
+			&zipCode,
+			&addressNote,
+			&itemID,
+			&productID,
+			&productName,
+			&productPrice,
+			&productQuantity,
+			&productImageURL,
+			&productDescription,
+			&productCategoryID,
+			&productCategoryName,
+			&itemNote,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan order: %w", err)
+		}
+
+		// convert nullable fields
+		if nullablePaymentID.Valid {
+			paymentID, err := uuid.Parse(nullablePaymentID.String)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse payment ID: %w", err)
+			}
+			o.PaymentID = paymentID
+		}
+		if nullablePaymentStatus.Valid {
+			o.PaymentStatus = nullablePaymentStatus.String
+		}
+		if nullablePaymentImage.Valid {
+			o.PaymentImageURL = nullablePaymentImage.String
+		}
+		if nullablePaymentNote.Valid {
+			o.PaymentAdminNote = nullablePaymentNote.String
 		}
 
 		if order == nil {
@@ -199,7 +242,6 @@ func (r *OrderPostgreQueryRepo) scanSingleOrder(ctx context.Context, query strin
 			ProductCategoryName: productCategoryName,
 			Note:                itemNote,
 		}
-
 	}
 
 	if err = rows.Err(); err != nil {
@@ -210,7 +252,7 @@ func (r *OrderPostgreQueryRepo) scanSingleOrder(ctx context.Context, query strin
 		return nil, sql.ErrNoRows
 	}
 
-	// Convert items map to slice
+	// convert items map to slice
 	order.Items = make([]entity.OrderItemView, 0, len(items))
 	for _, item := range items {
 		order.Items = append(order.Items, item)
