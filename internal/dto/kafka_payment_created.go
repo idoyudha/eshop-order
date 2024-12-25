@@ -2,7 +2,7 @@ package dto
 
 import "github.com/google/uuid"
 
-type KafkaPaymentCreated struct {
+type KafkaPaymentUpdated struct {
 	PaymentID uuid.UUID `json:"paymentId"`
 	OrderID   uuid.UUID `json:"orderId"`
 	ImageURL  string    `json:"imageUrl"`

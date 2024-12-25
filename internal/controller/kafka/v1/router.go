@@ -74,6 +74,10 @@ func KafkaNewRouter(
 				if err := routes.handleOrderViewCreated(ev); err != nil {
 					l.Error("Failed to handle order view creted: %w", err)
 				}
+			case constant.PaymentUpdatedTopic:
+				if err := routes.handleOrderPaymentUpdated(ev); err != nil {
+					l.Error("Failed to handle order payment updated: %w", err)
+				}
 			default:
 				l.Info("Unknown topic: %s", *ev.TopicPartition.Topic)
 			}
@@ -177,7 +181,7 @@ func (r *kafkaConsumerRoutes) handleOrderViewCreated(msg *kafka.Message) error {
 }
 
 func (r *kafkaConsumerRoutes) handleOrderPaymentUpdated(msg *kafka.Message) error {
-	var message dto.KafkaPaymentCreated
+	var message dto.KafkaPaymentUpdated
 
 	if err := json.Unmarshal(msg.Value, &message); err != nil {
 		r.l.Error(err, "http - v1 - kafkaConsumerRoutes - handleOrderPaymentUpdated")
