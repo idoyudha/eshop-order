@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/idoyudha/eshop-order/internal/entity"
 	"github.com/idoyudha/eshop-order/pkg/postgresql/postgrecommand"
 )
@@ -86,14 +85,14 @@ func (r *OrderPostgreCommandRepo) UpdateStatus(ctx context.Context, order *entit
 
 const queryUpdatePaymentIDOrder = `UPDATE orders SET payment_id = $1, updated_at = $2 WHERE id = $3;`
 
-func (r *OrderPostgreCommandRepo) UpdatePaymentID(ctx context.Context, orderID uuid.UUID, paymentID uuid.UUID) error {
+func (r *OrderPostgreCommandRepo) UpdatePaymentID(ctx context.Context, order *entity.Order) error {
 	stmt, errStmt := r.Conn.PrepareContext(ctx, queryUpdatePaymentIDOrder)
 	if errStmt != nil {
 		return errStmt
 	}
 	defer stmt.Close()
 
-	_, updateErr := stmt.ExecContext(ctx, paymentID, orderID)
+	_, updateErr := stmt.ExecContext(ctx, order.PaymentID, order.UpdatedAt, order.ID)
 	if updateErr != nil {
 		return updateErr
 	}

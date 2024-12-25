@@ -189,7 +189,8 @@ func (r *kafkaConsumerRoutes) handleOrderPaymentUpdated(msg *kafka.Message) erro
 	}
 
 	// 1. update order payment
-	err := r.ucoc.UpdateOrderPaymentID(context.Background(), message.OrderID, message.PaymentID)
+	orderEntity := dto.PaymentMessageUpdateToOrderEntity(message)
+	err := r.ucoc.UpdateOrderPaymentID(context.Background(), &orderEntity)
 	if err != nil {
 		r.l.Error(err, "http - v1 - kafkaConsumerRoutes - handleOrderPaymentUpdated")
 		return fmt.Errorf("failed to update order payment: %w", err)

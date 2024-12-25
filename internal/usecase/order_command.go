@@ -175,6 +175,6 @@ func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *enti
 	return nil
 }
 
-func (u *OrderCommandUseCase) UpdateOrderPaymentID(ctx context.Context, orderID uuid.UUID, paymentID uuid.UUID) error {
-	return u.repoPostgresCommand.UpdatePaymentID(ctx, orderID, paymentID)
+func (u *OrderCommandUseCase) UpdateOrderPaymentID(ctx context.Context, order *entity.Order) error {
+	return u.repoPostgresCommand.UpdatePaymentID(ctx, order)
 }
