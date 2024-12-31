@@ -47,7 +47,8 @@ func KafkaNewRouter(
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Process messages
+	// Process
+	log.Println("starting kafka consumer in order service, consuming message from other producer...")
 	run := true
 	for run {
 		select {
@@ -161,11 +162,13 @@ func (r *kafkaConsumerRoutes) handleOrderViewCreated(msg *kafka.Message) error {
 		}
 
 		items = append(items, entity.OrderItemView{
+			ProductID:          uuid.MustParse(restSuccess.Data.ID),
 			ProductName:        restSuccess.Data.Name,
 			ProductImageURL:    restSuccess.Data.ImageURL,
 			ProductDescription: restSuccess.Data.Description,
 			ProductCategoryID:  uuid.MustParse(restSuccess.Data.CategoryID),
 			ProductPrice:       restSuccess.Data.Price,
+			ProductQuantity:    int64(restSuccess.Data.Quantity),
 		})
 	}
 
