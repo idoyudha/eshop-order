@@ -88,10 +88,13 @@ func OrderViewEntityToGetManyOrderResponse(orders []*entity.OrderView) []orderRe
 		}
 
 		res = append(res, orderResponse{
-			ID:         order.OrderID,
-			Status:     order.Status,
-			TotalPrice: order.TotalPrice,
-			Items:      items,
+			ID:              order.OrderID,
+			Status:          order.Status,
+			TotalPrice:      order.TotalPrice,
+			PaymentID:       order.PaymentID,
+			PaymentStatus:   order.PaymentStatus,
+			PaymentImageURL: order.PaymentImageURL,
+			Items:           items,
 			Address: addressOrderResponse{
 				OrderID: order.Address.OrderViewID,
 				Street:  order.Address.Street,
@@ -100,6 +103,7 @@ func OrderViewEntityToGetManyOrderResponse(orders []*entity.OrderView) []orderRe
 				ZipCode: order.Address.ZipCode,
 				Note:    order.Address.Note,
 			},
+			CreatedAt: order.CreatedAt,
 		})
 	}
 	return res
@@ -118,9 +122,13 @@ func OrderViewEntityToGetOneOrderResponse(order *entity.OrderView) orderResponse
 	}
 
 	return orderResponse{
-		Status:     order.Status,
-		TotalPrice: order.TotalPrice,
-		Items:      items,
+		ID:              order.OrderID,
+		Status:          order.Status,
+		TotalPrice:      order.TotalPrice,
+		PaymentID:       order.PaymentID,
+		PaymentStatus:   order.PaymentStatus,
+		PaymentImageURL: order.PaymentImageURL,
+		Items:           items,
 		Address: addressOrderResponse{
 			OrderID: order.Address.OrderViewID,
 			Street:  order.Address.Street,
@@ -129,5 +137,6 @@ func OrderViewEntityToGetOneOrderResponse(order *entity.OrderView) orderResponse
 			ZipCode: order.Address.ZipCode,
 			Note:    order.Address.Note,
 		},
+		CreatedAt: order.CreatedAt,
 	}
 }

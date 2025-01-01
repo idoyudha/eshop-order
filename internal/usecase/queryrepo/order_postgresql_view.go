@@ -117,7 +117,7 @@ const baseQueryOrder = `
     WHERE o.deleted_at IS NULL
 `
 
-const queryGetOrderByID = baseQueryOrder + ` AND o.id = $1;`
+const queryGetOrderByID = baseQueryOrder + ` AND o.order_id = $1;`
 
 func (r *OrderPostgreQueryRepo) GetByID(ctx context.Context, id uuid.UUID) (*entity.OrderView, error) {
 	return r.scanSingleOrder(ctx, queryGetOrderByID, id)
