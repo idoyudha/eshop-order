@@ -162,13 +162,13 @@ func (r *kafkaConsumerRoutes) handleOrderViewCreated(msg *kafka.Message) error {
 		}
 
 		items = append(items, entity.OrderItemView{
-			ProductID:          uuid.MustParse(restSuccess.Data.ID),
+			ProductID:          item.ProductID,
 			ProductName:        restSuccess.Data.Name,
 			ProductImageURL:    restSuccess.Data.ImageURL,
 			ProductDescription: restSuccess.Data.Description,
 			ProductCategoryID:  uuid.MustParse(restSuccess.Data.CategoryID),
 			ProductPrice:       restSuccess.Data.Price,
-			ProductQuantity:    int64(restSuccess.Data.Quantity),
+			ProductQuantity:    item.ProductQuantity,
 		})
 	}
 
