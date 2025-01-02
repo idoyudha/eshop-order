@@ -175,6 +175,12 @@ func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *enti
 	return nil
 }
 
-func (u *OrderCommandUseCase) UpdateOrderPaymentID(ctx context.Context, order *entity.Order) error {
+func (u *OrderCommandUseCase) UpdateOrderPaymentID(ctx context.Context, order *entity.Order, paymentStatus string) error {
+	switch paymentStatus {
+	case entity.ORDER_PAYMENT_APPROVED:
+		order.SetStatusToOnDelivery()
+	case entity.ORDER_PAYMENT_REJECTED:
+		order.SetStatusToRejected()
+	}
 	return u.repoPostgresCommand.UpdatePaymentID(ctx, order)
 }

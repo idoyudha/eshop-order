@@ -27,12 +27,12 @@ type (
 	OrderCommand interface {
 		CreateOrder(context.Context, *entity.Order, string) error
 		UpdateOrderStatus(context.Context, *entity.Order, bool, bool) error
-		UpdateOrderPaymentID(context.Context, *entity.Order) error
+		UpdateOrderPaymentID(context.Context, *entity.Order, string) error
 	}
 
 	OrderQuery interface {
 		CreateOrderView(context.Context, *entity.OrderView) error
-		UpdateOrderViewPayment(context.Context, *entity.OrderView) error
+		UpdateOrderViewPayment(context.Context, *entity.OrderView, string) error
 		GetOrderByID(context.Context, uuid.UUID) (*entity.OrderView, error)
 		GetAllOrders(context.Context) ([]*entity.OrderView, error)
 		GetOrderByUserID(context.Context, uuid.UUID) ([]*entity.OrderView, error)

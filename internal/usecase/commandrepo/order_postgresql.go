@@ -83,7 +83,7 @@ func (r *OrderPostgreCommandRepo) UpdateStatus(ctx context.Context, order *entit
 	return nil
 }
 
-const queryUpdatePaymentIDOrder = `UPDATE orders SET payment_id = $1, updated_at = $2 WHERE id = $3;`
+const queryUpdatePaymentIDOrder = `UPDATE orders SET status = $1, payment_id = $2, updated_at = $3 WHERE id = $4;`
 
 func (r *OrderPostgreCommandRepo) UpdatePaymentID(ctx context.Context, order *entity.Order) error {
 	stmt, errStmt := r.Conn.PrepareContext(ctx, queryUpdatePaymentIDOrder)
@@ -92,7 +92,7 @@ func (r *OrderPostgreCommandRepo) UpdatePaymentID(ctx context.Context, order *en
 	}
 	defer stmt.Close()
 
-	_, updateErr := stmt.ExecContext(ctx, order.PaymentID, order.UpdatedAt, order.ID)
+	_, updateErr := stmt.ExecContext(ctx, order.Status, order.PaymentID, order.UpdatedAt, order.ID)
 	if updateErr != nil {
 		return updateErr
 	}

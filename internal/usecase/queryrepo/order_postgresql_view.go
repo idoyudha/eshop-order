@@ -66,7 +66,7 @@ func (r *OrderPostgreQueryRepo) Insert(ctx context.Context, order *entity.OrderV
 	return tx.Commit()
 }
 
-const queryUpdateOrderPayment = `UPDATE orders_view SET payment_id = $1, payment_status = $2, payment_image_url = $3, payment_admin_note = $4, updated_at = $5 WHERE order_id = $6;`
+const queryUpdateOrderPayment = `UPDATE orders_view SET status = $1, payment_id = $2, payment_status = $3, payment_image_url = $4, payment_admin_note = $5, updated_at = $6 WHERE order_id = $7;`
 
 func (r *OrderPostgreQueryRepo) UpdatePayment(ctx context.Context, orderView *entity.OrderView) error {
 	stmt, errStmt := r.Conn.PrepareContext(ctx, queryUpdateOrderPayment)
@@ -74,7 +74,7 @@ func (r *OrderPostgreQueryRepo) UpdatePayment(ctx context.Context, orderView *en
 		return errStmt
 	}
 	defer stmt.Close()
-	_, updateErr := stmt.ExecContext(ctx, orderView.PaymentID, orderView.PaymentStatus, orderView.PaymentImageURL, orderView.PaymentAdminNote, orderView.UpdatedAt, orderView.OrderID)
+	_, updateErr := stmt.ExecContext(ctx, orderView.Status, orderView.PaymentID, orderView.PaymentStatus, orderView.PaymentImageURL, orderView.PaymentAdminNote, orderView.UpdatedAt, orderView.OrderID)
 	if updateErr != nil {
 		return updateErr
 	}
