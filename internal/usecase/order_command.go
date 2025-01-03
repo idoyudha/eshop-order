@@ -182,5 +182,8 @@ func (u *OrderCommandUseCase) UpdateOrderPaymentID(ctx context.Context, order *e
 	case entity.ORDER_PAYMENT_REJECTED:
 		order.SetStatusToRejected()
 	}
+
+	// if payment rejected, call moveout in warehouse service, put back to warehouse
+
 	return u.repoPostgresCommand.UpdatePaymentID(ctx, order)
 }
