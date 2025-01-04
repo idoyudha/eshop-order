@@ -259,6 +259,7 @@ func (r *OrderPostgreQueryRepo) scanSingleOrder(ctx context.Context, query strin
 			ProductDescription:  productDescription,
 			ProductCategoryID:   productCategoryID,
 			ProductCategoryName: productCategoryName,
+			ShippingCost:        shippingCost,
 			Note:                itemNote,
 		}
 	}
