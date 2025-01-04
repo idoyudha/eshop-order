@@ -81,6 +81,7 @@ func OrderViewEntityToGetManyOrderResponse(orders []*entity.OrderView) []orderRe
 			items = append(items, itemsOrderResponse{
 				OrderID:      item.OrderViewID,
 				ProductID:    item.ProductID,
+				ProductName:  item.ProductName,
 				ImageURL:     item.ProductImageURL,
 				Price:        item.ProductPrice,
 				Quantity:     item.ProductQuantity,
@@ -117,6 +118,7 @@ func OrderViewEntityToGetOneOrderResponse(order *entity.OrderView) orderResponse
 		items = append(items, itemsOrderResponse{
 			OrderID:      item.OrderViewID,
 			ProductID:    item.ProductID,
+			ProductName:  item.ProductName,
 			ImageURL:     item.ProductImageURL,
 			Price:        item.ProductPrice,
 			Quantity:     item.ProductQuantity,
