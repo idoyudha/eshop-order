@@ -12,6 +12,7 @@ type (
 		AuthService
 		WarehouseService
 		ProductService
+		ShippingCostService
 		Kafka
 	}
 
@@ -52,6 +53,10 @@ type (
 
 	ProductService struct {
 		BaseURL string `env-required:"true" env:"PRODUCT_SERVICE"`
+	}
+
+	ShippingCostService struct {
+		URL string `env-required:"true" env:"SHIPPING_COST_SERVICE"`
 	}
 
 	Kafka struct {

@@ -30,6 +30,7 @@ func orderItemEntityToKafkaOrderItemsCreated(items []entity.OrderItem) []KafkaOr
 			OrderID:         item.OrderID,
 			ProductID:       item.ProductID,
 			ProductQuantity: item.ProductQuantity,
+			ShippingCost:    item.ShippingCost,
 			Note:            item.Note,
 		})
 	}

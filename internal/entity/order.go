@@ -62,3 +62,11 @@ func (o *Order) SetStatusToPending() {
 func (o *Order) SetStatusToDelivered() {
 	o.Status = ORDER_DELIVERED
 }
+
+func (o *Order) AddShippingCost(shippingCost float64) {
+	o.TotalPrice += shippingCost
+}
+
+func (o *Order) AddTotalPrice(price float64) {
+	o.TotalPrice += price
+}

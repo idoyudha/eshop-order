@@ -12,6 +12,7 @@ type OrderItem struct {
 	ProductID       uuid.UUID
 	ProductQuantity int64
 	Note            string
+	ShippingCost    float64
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	DeletedAt       time.Time
@@ -25,4 +26,8 @@ func (o *OrderItem) GenerateOrderItemID() error {
 
 	o.ID = id
 	return nil
+}
+
+func (o *OrderItem) SetShippingCost(shippingCost float64) {
+	o.ShippingCost = shippingCost
 }

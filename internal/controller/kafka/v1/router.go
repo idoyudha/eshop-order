@@ -169,6 +169,7 @@ func (r *kafkaConsumerRoutes) handleOrderViewCreated(msg *kafka.Message) error {
 			ProductCategoryID:  uuid.MustParse(restSuccess.Data.CategoryID),
 			ProductPrice:       restSuccess.Data.Price,
 			ProductQuantity:    item.ProductQuantity,
+			ShippingCost:       item.ShippingCost,
 		})
 	}
 

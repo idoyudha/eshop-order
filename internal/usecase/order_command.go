@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -19,17 +20,20 @@ type OrderCommandUseCase struct {
 	repoPostgresCommand OrderPostgreCommandRepo
 	producer            *kafka.ProducerServer
 	warehouseService    config.WarehouseService
+	shippingCostService config.ShippingCostService
 }
 
 func NewOrderCommandUseCase(
 	repoPostgresCommand OrderPostgreCommandRepo,
 	producer *kafka.ProducerServer,
 	warehouseService config.WarehouseService,
+	shippingCostService config.ShippingCostService,
 ) *OrderCommandUseCase {
 	return &OrderCommandUseCase{
 		repoPostgresCommand,
 		producer,
 		warehouseService,
+		shippingCostService,
 	}
 }
 
@@ -45,36 +49,8 @@ type orderItemRequest struct {
 	Price       float64   `json:"price"`
 }
 
-func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Order, token string) error {
-	order.SetStatusToPending()
-	err := order.GenerateOrderID()
-	if err != nil {
-		return fmt.Errorf("failed to generate order id: %w", err)
-	}
-
-	err = order.Address.GenerateOrderAddressID()
-	if err != nil {
-		return fmt.Errorf("failed to generate order address id: %w", err)
-	}
-
-	// 1. get from warehouse stock
-	warehouseProductURL := fmt.Sprintf("%s/v1/stock-movements/moveout", u.warehouseService.BaseURL)
-	var stockRequest stockMovementRequest
-	var items []orderItemRequest
-
-	for i := range order.Items {
-		err := order.Items[i].GenerateOrderItemID()
-		if err != nil {
-			return fmt.Errorf("failed to generate order item id: %w", err)
-		}
-		items = append(items, orderItemRequest{
-			ProductID: order.Items[i].ProductID,
-			Quantity:  order.Items[i].ProductQuantity,
-		})
-	}
-	stockRequest.Items = items
-	stockRequest.ZipCode = order.Address.ZipCode
-
+func createStockMovement(ctx context.Context, whBaseURL string, stockRequest stockMovementRequest, token string) error {
+	warehouseProductURL := fmt.Sprintf("%s/v1/stock-movements/moveout", whBaseURL)
 	requestBody, err := json.Marshal(stockRequest)
 	if err != nil {
 		return fmt.Errorf("failed to marshal stock request: %w", err)
@@ -102,18 +78,120 @@ func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Ord
 		// 	return fmt.Errorf("failed to read warehouse response body: %w", err)
 		// }
 		// defer resp.Body.Close()
-
 		return fmt.Errorf("warehouse service returned status: %d", resp.StatusCode)
 	}
 
-	// 2. save order to database write
+	return nil
+}
+
+type shippingCostRequest struct {
+	FromZip string `json:"from_zip"`
+	ToZip   string `json:"to_zip"`
+}
+
+type shippingCostResponse struct {
+	Code int `json:"code"`
+	Data struct {
+		ShippingCost float64 `json:"shipping_cost"`
+	}
+	Message string `json:"message"`
+}
+
+func getShippingCost(ctx context.Context, scBaseURL string, request shippingCostRequest) (float64, error) {
+	shippingCostURL := fmt.Sprintf("%s/shipping-cost", scBaseURL)
+	requestBody, err := json.Marshal(request)
+	if err != nil {
+		return 0, fmt.Errorf("failed to marshal shipping cost request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, shippingCostURL, bytes.NewBuffer(requestBody))
+	if err != nil {
+		return 0, fmt.Errorf("failed to create shipping cost request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf("failed to make shipping cost request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("shipping cost service returned status: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, fmt.Errorf("failed to read shipping cost response body: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var shippingCostResponse shippingCostResponse
+	err = json.Unmarshal(body, &shippingCostResponse)
+	if err != nil {
+		return 0, fmt.Errorf("failed to unmarshal shipping cost response: %w", err)
+	}
+
+	return shippingCostResponse.Data.ShippingCost, nil
+}
+
+func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Order, token string) error {
+	order.SetStatusToPending()
+	err := order.GenerateOrderID()
+	if err != nil {
+		return fmt.Errorf("failed to generate order id: %w", err)
+	}
+
+	err = order.Address.GenerateOrderAddressID()
+	if err != nil {
+		return fmt.Errorf("failed to generate order address id: %w", err)
+	}
+	// 1. create stock movement
+	var stockRequest stockMovementRequest
+	var items []orderItemRequest
+
+	for i := range order.Items {
+		err := order.Items[i].GenerateOrderItemID()
+		if err != nil {
+			return fmt.Errorf("failed to generate order item id: %w", err)
+		}
+
+		// 2. get and set shipping cost
+		// TODO: get nearest warehouse zipcode
+		shippingCostReq := shippingCostRequest{
+			FromZip: order.Address.ZipCode,
+			ToZip:   order.Address.ZipCode,
+		}
+
+		shippingCost, err := getShippingCost(ctx, u.shippingCostService.URL, shippingCostReq)
+		if err != nil {
+			return fmt.Errorf("failed to get shipping cost: %w", err)
+		}
+
+		order.Items[i].SetShippingCost(shippingCost)
+
+		order.AddShippingCost(shippingCost)
+		items = append(items, orderItemRequest{
+			ProductID: order.Items[i].ProductID,
+			Quantity:  order.Items[i].ProductQuantity,
+		})
+	}
+	stockRequest.Items = items
+	stockRequest.ZipCode = order.Address.ZipCode
+	err = createStockMovement(ctx, u.warehouseService.BaseURL, stockRequest, token)
+	if err != nil {
+		return fmt.Errorf("failed to create stock movement: %w", err)
+	}
+
+	// 3. save order to database write
 	err = u.repoPostgresCommand.Insert(ctx, order)
 	if err != nil {
 		// TODO: handle error, send delete request to warehouse stock movement
 		return fmt.Errorf("failed to insert order record: %w", err)
 	}
 
-	// 3. send event to kafka for database read
+	// 4. send event to kafka for database read
 	message := dto.OrderEntityToKafkaOrderCreatedMessage(order)
 	err = u.producer.Publish(
 		constant.OrderCreatedTopic,
