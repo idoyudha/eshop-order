@@ -84,6 +84,62 @@ func createStockMovement(ctx context.Context, whBaseURL string, stockRequest sto
 	return nil
 }
 
+type getNearestWarehouseRequest struct {
+	ZipCode   string    `json:"zip_code"`
+	ProductID uuid.UUID `json:"product_id"`
+}
+
+type getNearestWarehouseResponse struct {
+	Code int `json:"code"`
+	Data struct {
+		ZipCode string `json:"zip_code"`
+	}
+	Message string `json:"message"`
+}
+
+func getNearestWarehouse(ctx context.Context, token, whBaseURL, zipCode string, productID uuid.UUID) (*string, error) {
+	var request getNearestWarehouseRequest
+	request.ZipCode = zipCode
+	request.ProductID = productID
+
+	nearestWarehouseURL := fmt.Sprintf("%s/v1/warehouse-products/nearest", whBaseURL)
+	requestBody, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal nearest warehouse request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, nearestWarehouseURL, bytes.NewBuffer(requestBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create nearest warehouse request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make nearest warehouse request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("nearest warehouse service returned status: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read nearest warehouse response body: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var nearestWarehouseResponse getNearestWarehouseResponse
+	if err := json.Unmarshal(body, &nearestWarehouseResponse); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal nearest warehouse response: %w", err)
+	}
+
+	return &nearestWarehouseResponse.Data.ZipCode, nil
+}
+
 type shippingCostRequest struct {
 	FromZip string `json:"from_zip"`
 	ToZip   string `json:"to_zip"`
@@ -158,10 +214,14 @@ func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Ord
 		}
 
 		// 2. get and set shipping cost
-		// TODO: get nearest warehouse zipcode
+		nearestZipCode, err := getNearestWarehouse(ctx, token, u.warehouseService.BaseURL, order.Address.ZipCode, order.Items[i].ProductID)
+		if err != nil {
+			return fmt.Errorf("failed to get nearest warehouse zipcode: %w", err)
+		}
+
 		shippingCostReq := shippingCostRequest{
 			FromZip: order.Address.ZipCode,
-			ToZip:   order.Address.ZipCode,
+			ToZip:   *nearestZipCode,
 		}
 
 		shippingCost, err := getShippingCost(ctx, u.shippingCostService.URL, shippingCostReq)
