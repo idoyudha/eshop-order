@@ -22,7 +22,7 @@ eshop-auth
 │   │       └── v1/
 │   ├── dto/
 │   ├── entity/
-│   ├── usecase/
+│   └── usecase/
 │       ├── commandrepo/
 │       └── queryrepo/
 │   
