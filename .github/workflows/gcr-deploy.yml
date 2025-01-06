@@ -1,0 +1,55 @@
+name: Build and Deploy to GKE
+
+on:
+  push:
+    branches: [ master ]
+
+env:
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
+  IMAGE_NAME: ${{ vars.IMAGE_NAME }}
+  GCR_REGION: ${{ vars.GCR_REGION }}
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to GKE
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    # Authentication
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+        token_format: 'access_token'
+        service_account: 'github-actions@${{ env.PROJECT_ID }}.iam.gserviceaccount.com'
+
+    # Setup gcloud CLI
+    - name: Set up Cloud SDK
+      uses: 'google-github-actions/setup-gcloud@v2'
+      with:
+        project_id: ${{ env.PROJECT_ID }}
+        install_components: 'docker-credential-gcr'
+
+    # Configure docker auth
+    - name: Docker auth configure
+      run: |
+        gcloud auth configure-docker ${{ env.GCR_REGION }} --quiet
+
+    # Build the Docker image
+    - name: Build
+      run: |
+        docker build . \
+          -t "${{ env.GCR_REGION }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" \
+          -t "${{ env.GCR_REGION }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:latest"
+      
+    # Push the Docker image to Google Container Registry
+    - name: Push
+      run: |
+        docker push "${{ env.GCR_REGION }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+        docker push "${{ env.GCR_REGION }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:latest"
