@@ -2,6 +2,7 @@ package v1
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -53,19 +54,26 @@ type createAddressOrderRequest struct {
 }
 
 type orderResponse struct {
-	ID         uuid.UUID            `json:"id"`
-	Status     string               `json:"status"`
-	TotalPrice float64              `json:"total_price"`
-	Items      []itemsOrderResponse `json:"items"`
-	Address    addressOrderResponse `json:"address"`
+	ID              uuid.UUID            `json:"id"`
+	Status          string               `json:"status"`
+	TotalPrice      float64              `json:"total_price"`
+	PaymentID       uuid.UUID            `json:"payment_id"`
+	PaymentStatus   string               `json:"payment_status"`
+	PaymentImageURL string               `json:"payment_image_url"`
+	Items           []itemsOrderResponse `json:"items"`
+	Address         addressOrderResponse `json:"address"`
+	CreatedAt       time.Time            `json:"created_at"`
 }
 
 type itemsOrderResponse struct {
-	OrderID   uuid.UUID `json:"order_id"`
-	ProductID uuid.UUID `json:"product_id"`
-	Price     float64   `json:"price"`
-	Quantity  int64     `json:"quantity"`
-	Note      string    `json:"note"`
+	OrderID      uuid.UUID `json:"order_id"`
+	ProductID    uuid.UUID `json:"product_id"`
+	ProductName  string    `json:"product_name"`
+	ImageURL     string    `json:"image_url"`
+	Price        float64   `json:"price"`
+	Quantity     int64     `json:"quantity"`
+	ShippingCost float64   `json:"shipping_cost"`
+	Note         string    `json:"note"`
 }
 
 type addressOrderResponse struct {

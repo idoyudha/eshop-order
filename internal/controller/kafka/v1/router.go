@@ -47,7 +47,8 @@ func KafkaNewRouter(
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Process messages
+	// Process
+	log.Println("starting kafka consumer in order service, consuming message from other producer...")
 	run := true
 	for run {
 		select {
@@ -161,11 +162,14 @@ func (r *kafkaConsumerRoutes) handleOrderViewCreated(msg *kafka.Message) error {
 		}
 
 		items = append(items, entity.OrderItemView{
+			ProductID:          item.ProductID,
 			ProductName:        restSuccess.Data.Name,
 			ProductImageURL:    restSuccess.Data.ImageURL,
 			ProductDescription: restSuccess.Data.Description,
 			ProductCategoryID:  uuid.MustParse(restSuccess.Data.CategoryID),
 			ProductPrice:       restSuccess.Data.Price,
+			ProductQuantity:    item.ProductQuantity,
+			ShippingCost:       item.ShippingCost,
 		})
 	}
 
@@ -189,7 +193,8 @@ func (r *kafkaConsumerRoutes) handleOrderPaymentUpdated(msg *kafka.Message) erro
 	}
 
 	// 1. update order payment
-	err := r.ucoc.UpdateOrderPaymentID(context.Background(), message.OrderID, message.PaymentID)
+	orderEntity := dto.PaymentMessageUpdateToOrderEntity(message)
+	err := r.ucoc.UpdateOrderPaymentID(context.Background(), &orderEntity, message.Status)
 	if err != nil {
 		r.l.Error(err, "http - v1 - kafkaConsumerRoutes - handleOrderPaymentUpdated")
 		return fmt.Errorf("failed to update order payment: %w", err)
@@ -197,7 +202,7 @@ func (r *kafkaConsumerRoutes) handleOrderPaymentUpdated(msg *kafka.Message) erro
 
 	// 2. update order view
 	orderViewEntity := dto.PaymentMessageToOrderViewEntity(message)
-	err = r.ucoq.UpdateOrderViewPayment(context.Background(), &orderViewEntity)
+	err = r.ucoq.UpdateOrderViewPayment(context.Background(), &orderViewEntity, message.Status)
 	if err != nil {
 		r.l.Error(err, "http - v1 - kafkaConsumerRoutes - handleOrderPaymentUpdated")
 		return fmt.Errorf("failed to update order view: %w", err)

@@ -50,10 +50,11 @@ func OrderEntityToCreatedOrderResponse(order entity.Order) orderResponse {
 	var items []itemsOrderResponse
 	for _, item := range order.Items {
 		items = append(items, itemsOrderResponse{
-			OrderID:   item.OrderID,
-			ProductID: item.ProductID,
-			Quantity:  item.ProductQuantity,
-			Note:      item.Note,
+			OrderID:      item.OrderID,
+			ProductID:    item.ProductID,
+			Quantity:     item.ProductQuantity,
+			ShippingCost: item.ShippingCost,
+			Note:         item.Note,
 		})
 	}
 
@@ -78,19 +79,25 @@ func OrderViewEntityToGetManyOrderResponse(orders []*entity.OrderView) []orderRe
 		var items []itemsOrderResponse
 		for _, item := range order.Items {
 			items = append(items, itemsOrderResponse{
-				OrderID:   item.OrderViewID,
-				ProductID: item.ProductID,
-				Price:     item.ProductPrice,
-				Quantity:  item.ProductQuantity,
-				Note:      item.Note,
+				OrderID:      item.OrderViewID,
+				ProductID:    item.ProductID,
+				ProductName:  item.ProductName,
+				ImageURL:     item.ProductImageURL,
+				Price:        item.ProductPrice,
+				Quantity:     item.ProductQuantity,
+				ShippingCost: item.ShippingCost,
+				Note:         item.Note,
 			})
 		}
 
 		res = append(res, orderResponse{
-			ID:         order.ID,
-			Status:     order.Status,
-			TotalPrice: order.TotalPrice,
-			Items:      items,
+			ID:              order.OrderID,
+			Status:          order.Status,
+			TotalPrice:      order.TotalPrice,
+			PaymentID:       order.PaymentID,
+			PaymentStatus:   order.PaymentStatus,
+			PaymentImageURL: order.PaymentImageURL,
+			Items:           items,
 			Address: addressOrderResponse{
 				OrderID: order.Address.OrderViewID,
 				Street:  order.Address.Street,
@@ -99,6 +106,7 @@ func OrderViewEntityToGetManyOrderResponse(orders []*entity.OrderView) []orderRe
 				ZipCode: order.Address.ZipCode,
 				Note:    order.Address.Note,
 			},
+			CreatedAt: order.CreatedAt,
 		})
 	}
 	return res
@@ -108,18 +116,25 @@ func OrderViewEntityToGetOneOrderResponse(order *entity.OrderView) orderResponse
 	var items []itemsOrderResponse
 	for _, item := range order.Items {
 		items = append(items, itemsOrderResponse{
-			OrderID:   item.OrderViewID,
-			ProductID: item.ProductID,
-			Price:     item.ProductPrice,
-			Quantity:  item.ProductQuantity,
-			Note:      item.Note,
+			OrderID:      item.OrderViewID,
+			ProductID:    item.ProductID,
+			ProductName:  item.ProductName,
+			ImageURL:     item.ProductImageURL,
+			Price:        item.ProductPrice,
+			Quantity:     item.ProductQuantity,
+			ShippingCost: item.ShippingCost,
+			Note:         item.Note,
 		})
 	}
 
 	return orderResponse{
-		Status:     order.Status,
-		TotalPrice: order.TotalPrice,
-		Items:      items,
+		ID:              order.OrderID,
+		Status:          order.Status,
+		TotalPrice:      order.TotalPrice,
+		PaymentID:       order.PaymentID,
+		PaymentStatus:   order.PaymentStatus,
+		PaymentImageURL: order.PaymentImageURL,
+		Items:           items,
 		Address: addressOrderResponse{
 			OrderID: order.Address.OrderViewID,
 			Street:  order.Address.Street,
@@ -128,5 +143,6 @@ func OrderViewEntityToGetOneOrderResponse(order *entity.OrderView) orderResponse
 			ZipCode: order.Address.ZipCode,
 			Note:    order.Address.Note,
 		},
+		CreatedAt: order.CreatedAt,
 	}
 }

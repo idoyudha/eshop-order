@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS "order_items" (
   "order_id" uuid,
   "product_id" uuid NOT NULL,
   "product_quantity" integer NOT NULL,
+  "shipping_cost" float NOT NULL,
   "note" text,
   "created_at" timestamp NOT NULL,
   "updated_at" timestamp NOT NULL,

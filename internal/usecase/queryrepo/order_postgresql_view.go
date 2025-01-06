@@ -22,7 +22,7 @@ func NewOrderPostgreCommandRepo(conn *postgrequery.PostgresQuery) *OrderPostgreQ
 
 const (
 	queryInsertOrdersView       = `INSERT INTO orders_view (id, order_id, user_id, status, total_price, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7);`
-	queryInserrOrderItemsView   = `INSERT INTO order_items_view (id, order_view_id, product_id, product_name, product_price, product_quantity, product_image_url, product_description, product_category_id, product_category_name, note, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`
+	queryInserrOrderItemsView   = `INSERT INTO order_items_view (id, order_view_id, product_id, product_name, product_price, product_quantity, product_image_url, product_description, product_category_id, product_category_name, shipping_cost, note, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);`
 	queryInsertOrderAddressView = `INSERT INTO order_addresses_view (id, order_view_id, street, city, state, zip_code, note, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`
 )
 
@@ -47,8 +47,8 @@ func (r *OrderPostgreQueryRepo) Insert(ctx context.Context, order *entity.OrderV
 			item.ID, order.ID,
 			item.ProductID, item.ProductName, item.ProductPrice,
 			item.ProductQuantity, item.ProductImageURL, item.ProductDescription,
-			item.ProductCategoryID, item.ProductCategoryName, item.Note,
-			item.CreatedAt, item.UpdatedAt)
+			item.ProductCategoryID, item.ProductCategoryName, item.ShippingCost,
+			item.Note, item.CreatedAt, item.UpdatedAt)
 		if err != nil {
 			return fmt.Errorf("failed to insert order item view: %w", err)
 		}
@@ -66,16 +66,15 @@ func (r *OrderPostgreQueryRepo) Insert(ctx context.Context, order *entity.OrderV
 	return tx.Commit()
 }
 
-const queryUpdateOrderPayment = `UPDATE orders_view SET payment_id = $1, payment_status = $2, payment_image_url = $3, payment_admin_note = $4, updated_at = $5 WHERE id = $6;`
+const queryUpdateOrderPayment = `UPDATE orders_view SET status = $1, payment_id = $2, payment_status = $3, payment_image_url = $4, payment_admin_note = $5, updated_at = $6 WHERE order_id = $7;`
 
-func (r *OrderPostgreQueryRepo) UpdatePayment(ctx context.Context, order *entity.OrderView) error {
+func (r *OrderPostgreQueryRepo) UpdatePayment(ctx context.Context, orderView *entity.OrderView) error {
 	stmt, errStmt := r.Conn.PrepareContext(ctx, queryUpdateOrderPayment)
 	if errStmt != nil {
 		return errStmt
 	}
 	defer stmt.Close()
-
-	_, updateErr := stmt.ExecContext(ctx, order.PaymentID, order.PaymentStatus, order.PaymentImageURL, order.PaymentAdminNote, order.UpdatedAt, order.ID)
+	_, updateErr := stmt.ExecContext(ctx, orderView.Status, orderView.PaymentID, orderView.PaymentStatus, orderView.PaymentImageURL, orderView.PaymentAdminNote, orderView.UpdatedAt, orderView.OrderID)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -111,6 +110,7 @@ const baseQueryOrder = `
         oi.product_description,
         oi.product_category_id,
         oi.product_category_name,
+		oi.shipping_cost,
         oi.note as item_note
     FROM orders_view o
     LEFT JOIN order_addresses_view oa ON o.id = oa.order_view_id
@@ -118,7 +118,7 @@ const baseQueryOrder = `
     WHERE o.deleted_at IS NULL
 `
 
-const queryGetOrderByID = baseQueryOrder + ` AND o.id = $1;`
+const queryGetOrderByID = baseQueryOrder + ` AND o.order_id = $1;`
 
 func (r *OrderPostgreQueryRepo) GetByID(ctx context.Context, id uuid.UUID) (*entity.OrderView, error) {
 	return r.scanSingleOrder(ctx, queryGetOrderByID, id)
@@ -179,6 +179,7 @@ func (r *OrderPostgreQueryRepo) scanSingleOrder(ctx context.Context, query strin
 			productImageURL, productDescription string
 			productCategoryID                   uuid.UUID
 			productCategoryName                 string
+			shippingCost                        float64
 			itemNote                            string
 		)
 
@@ -209,6 +210,7 @@ func (r *OrderPostgreQueryRepo) scanSingleOrder(ctx context.Context, query strin
 			&productDescription,
 			&productCategoryID,
 			&productCategoryName,
+			&shippingCost,
 			&itemNote,
 		)
 		if err != nil {
@@ -257,6 +259,7 @@ func (r *OrderPostgreQueryRepo) scanSingleOrder(ctx context.Context, query strin
 			ProductDescription:  productDescription,
 			ProductCategoryID:   productCategoryID,
 			ProductCategoryName: productCategoryName,
+			ShippingCost:        shippingCost,
 			Note:                itemNote,
 		}
 	}
@@ -308,7 +311,9 @@ func (r *OrderPostgreQueryRepo) scanMultipleOrders(ctx context.Context, query st
 			productQuantity                     int64
 			productImageURL, productDescription string
 			productCategoryID                   uuid.UUID
-			productCategoryName, itemNote       string
+			productCategoryName                 string
+			shippingCost                        float64
+			itemNote                            string
 		)
 
 		err := rows.Scan(
@@ -338,6 +343,7 @@ func (r *OrderPostgreQueryRepo) scanMultipleOrders(ctx context.Context, query st
 			&productDescription,
 			&productCategoryID,
 			&productCategoryName,
+			&shippingCost,
 			&itemNote,
 		)
 		if err != nil {
@@ -390,6 +396,7 @@ func (r *OrderPostgreQueryRepo) scanMultipleOrders(ctx context.Context, query st
 				ProductDescription:  productDescription,
 				ProductCategoryID:   productCategoryID,
 				ProductCategoryName: productCategoryName,
+				ShippingCost:        shippingCost,
 				Note:                itemNote,
 			}
 		}

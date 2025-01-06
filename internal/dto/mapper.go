@@ -30,11 +30,19 @@ func orderItemEntityToKafkaOrderItemsCreated(items []entity.OrderItem) []KafkaOr
 			OrderID:         item.OrderID,
 			ProductID:       item.ProductID,
 			ProductQuantity: item.ProductQuantity,
+			ShippingCost:    item.ShippingCost,
 			Note:            item.Note,
 		})
 	}
 
 	return kafkaItems
+}
+
+func PaymentMessageUpdateToOrderEntity(msg KafkaPaymentUpdated) entity.Order {
+	return entity.Order{
+		ID:        msg.OrderID,
+		PaymentID: msg.PaymentID,
+	}
 }
 
 func PaymentMessageToOrderViewEntity(message KafkaPaymentUpdated) entity.OrderView {

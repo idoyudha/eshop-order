@@ -15,6 +15,7 @@ type KafkaOrderItemsCreated struct {
 	OrderID         uuid.UUID `json:"order_id"`
 	ProductID       uuid.UUID `json:"product_id"`
 	ProductQuantity int64     `json:"product_quantity"`
+	ShippingCost    float64   `json:"shipping_cost"`
 	Note            string    `json:"note"`
 }
 

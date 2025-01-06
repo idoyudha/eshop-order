@@ -41,7 +41,13 @@ func (u *OrderQueryUseCase) CreateOrderView(ctx context.Context, order *entity.O
 	return u.repoPostgresQuery.Insert(ctx, order)
 }
 
-func (u *OrderQueryUseCase) UpdateOrderViewPayment(ctx context.Context, order *entity.OrderView) error {
+func (u *OrderQueryUseCase) UpdateOrderViewPayment(ctx context.Context, order *entity.OrderView, paymentStatus string) error {
+	switch paymentStatus {
+	case entity.ORDER_PAYMENT_APPROVED:
+		order.SetStatusToOnDelivery()
+	case entity.ORDER_PAYMENT_REJECTED:
+		order.SetStatusToRejected()
+	}
 	return u.repoPostgresQuery.UpdatePayment(ctx, order)
 }
 
