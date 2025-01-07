@@ -8,30 +8,30 @@ This service handles order management of user and admin. Using postgres as main 
 ```
 eshop-auth
 ├── .github/
-│   └── workflows/
+│   └── workflows/          # github workflows to automatically test, build, and push
 ├── cmd/
-│   └── app/
-├── config/
+│   └── app/                # configuration and log initialization
+├── config/                 # configuration
 ├── internal/   
-│   ├── app/
-│   ├── constant/
-│   ├── controller/
+│   ├── app/                # one run function in the `app.go`
+│   ├── constant/           # global constant
+│   ├── controller/         # serve handler layer
 │   │   ├── http/
-│   │   |   └── v1/
+│   │   |   └── v1/         # rest http
 │   │   └── kafka
-│   │       └── v1/
-│   ├── dto/
-│   ├── entity/
-│   └── usecase/
-│       ├── commandrepo/
-│       └── queryrepo/
+│   │       └── v1/         # kafka subscriber
+│   ├── dto/                # data transfer object global (ex: kafka publisher and consumer)
+│   ├── entity/             # entities of business logic (models) can be used in any layer
+│   └── usecase/            # business logic
+│       ├── commandrepo/    # database that business logic works with, only command database
+│       └── queryrepo/      # database that business logic works with, only query database
 │   
-├── migrations/
+├── migrations/             # sql migration
 └── pkg/
-    ├── httpserver/
-    ├── kafka/
-    ├── logger/
-    └── postgresql/
+    ├── httpserver/         # http server initialization
+    ├── kafka/              # kafka initialization
+    ├── logger/             # logger initialization
+    └── postgresql/         # postgresql initialization
 ```
 
 ## Tech Stack
