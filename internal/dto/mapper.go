@@ -69,3 +69,23 @@ func OrderStatusUpdatedMessageToOrderViewEntity(msg KafkaOrderStatusUpdated) ent
 		Status:  msg.Status,
 	}
 }
+
+func OrderEntityToKafkaSaleCreatedMessage(order *entity.Order) KafkaSaleCreated {
+	return KafkaSaleCreated{
+		OrderID: order.ID,
+		UserID:  order.UserID,
+		Items:   orderItemEntityToKafkaSaleItemsCreated(order.Items),
+	}
+}
+
+func orderItemEntityToKafkaSaleItemsCreated(items []entity.OrderItem) []KafkaSaleItemCreated {
+	var kafkaItems []KafkaSaleItemCreated
+	for _, item := range items {
+		kafkaItems = append(kafkaItems, KafkaSaleItemCreated{
+			ProductID: item.ProductID,
+			Quantity:  item.ProductQuantity,
+		})
+	}
+
+	return kafkaItems
+}

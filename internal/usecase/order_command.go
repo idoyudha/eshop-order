@@ -295,7 +295,7 @@ func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *enti
 
 	err = u.producer.Publish(
 		constant.OrderCreatedTopic,
-		[]byte(order.ID.String()),
+		[]byte(uuid.New().String()),
 		message,
 	)
 	if err != nil {
@@ -303,4 +303,21 @@ func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *enti
 	}
 
 	return nil
+}
+
+func (u *OrderCommandUseCase) SendSalesReport(ctx context.Context, id uuid.UUID) error {
+	order, err := u.repoPostgresCommand.GetByID(ctx, id)
+
+	message := dto.OrderEntityToKafkaSaleCreatedMessage(order)
+
+	err = u.producer.Publish(
+		constant.SaleCreated,
+		[]byte(uuid.New().String()),
+		message,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to produce kafka message: %w", err)
+	}
+
+	return err
 }

@@ -12,6 +12,7 @@ type (
 		Insert(context.Context, *entity.Order) error
 		UpdateStatus(context.Context, *entity.Order) error
 		UpdatePaymentID(context.Context, *entity.Order) error
+		GetByID(context.Context, uuid.UUID) (*entity.Order, error)
 	}
 
 	OrderPostgreQueryRepo interface {
@@ -29,6 +30,7 @@ type (
 		CreateOrder(context.Context, *entity.Order, string) error
 		UpdateOrderStatus(context.Context, *entity.Order, string) error
 		UpdateOrderPaymentID(context.Context, *entity.Order, string) error
+		SendSalesReport(context.Context, uuid.UUID) error
 	}
 
 	OrderQuery interface {
