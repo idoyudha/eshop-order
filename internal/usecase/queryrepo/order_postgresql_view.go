@@ -419,3 +419,19 @@ func (r *OrderPostgreQueryRepo) scanMultipleOrders(ctx context.Context, query st
 
 	return orders, nil
 }
+
+const queryUpdateStatusByOrderID = `UPDATE orders_view SET status = $1, updated_at = $2 WHERE order_id = $3;`
+
+func (r *OrderPostgreQueryRepo) UpdateStatus(ctx context.Context, orderView *entity.OrderView) error {
+	stmt, errStmt := r.Conn.PrepareContext(ctx, queryUpdateStatusByOrderID)
+	if errStmt != nil {
+		return errStmt
+	}
+	defer stmt.Close()
+	_, updateErr := stmt.ExecContext(ctx, orderView.Status, orderView.UpdatedAt, orderView.OrderID)
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}

@@ -31,6 +31,7 @@ func newOrderRoutes(
 		h.GET("/user", r.getOrderByUserID)
 		h.GET("/:id", r.getOrderByID)
 		h.GET("", r.getAllOrders)
+		h.PATCH("/:id", r.updateOrderStatus)
 	}
 }
 
@@ -177,4 +178,35 @@ func (r *orderRoutes) getAllOrders(ctx *gin.Context) {
 	response := OrderViewEntityToGetManyOrderResponse(orders)
 
 	ctx.JSON(http.StatusOK, newGetSuccess(response))
+}
+
+type UpdateOrderStatusRequest struct {
+	Status string `json:"status"`
+}
+
+func (r *orderRoutes) updateOrderStatus(ctx *gin.Context) {
+	orderID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		r.l.Error(err, "http - v1 - orderRoutes - updateOrderStatus")
+		ctx.JSON(http.StatusBadRequest, newBadRequestError(err.Error()))
+		return
+	}
+
+	var req UpdateOrderStatusRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		r.l.Error(err, "http - v1 - orderRoutes - updateOrderStatus")
+		ctx.JSON(http.StatusBadRequest, newBadRequestError(err.Error()))
+		return
+	}
+
+	orderEntity := UpdateOrderRequestToOrderEntity(orderID)
+
+	err = r.uoc.UpdateOrderStatus(ctx.Request.Context(), &orderEntity, req.Status)
+	if err != nil {
+		r.l.Error(err, "http - v1 - orderRoutes - updateOrderStatus")
+		ctx.JSON(http.StatusInternalServerError, newInternalServerError(err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, newUpdateSuccess(nil))
 }

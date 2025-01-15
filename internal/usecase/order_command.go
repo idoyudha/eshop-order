@@ -325,3 +325,14 @@ func (u *OrderCommandUseCase) UpdateOrderPaymentID(ctx context.Context, order *e
 
 	return u.repoPostgresCommand.UpdatePaymentID(ctx, order)
 }
+
+func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *entity.Order, orderStatus string) error {
+	switch orderStatus {
+	case entity.ORDER_DELIVERED:
+		order.SetStatusToDelivered()
+	case entity.ORDER_REJECTED:
+		order.SetStatusToRejected()
+	}
+
+	return u.repoPostgresCommand.UpdateStatus(ctx, order)
+}

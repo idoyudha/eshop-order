@@ -22,11 +22,12 @@ type (
 		GetByUserID(context.Context, uuid.UUID) ([]*entity.OrderView, error)
 		GetByPaymentID(context.Context, uuid.UUID) (*entity.OrderView, error)
 		GetByStatus(context.Context, string) ([]*entity.OrderView, error)
+		UpdateStatus(context.Context, *entity.OrderView) error
 	}
 
 	OrderCommand interface {
 		CreateOrder(context.Context, *entity.Order, string) error
-		// UpdateOrderStatus(context.Context, *entity.Order, bool, bool) error
+		UpdateOrderStatus(context.Context, *entity.Order, string) error
 		UpdateOrderPaymentID(context.Context, *entity.Order, string) error
 	}
 
@@ -38,5 +39,6 @@ type (
 		GetOrderByUserID(context.Context, uuid.UUID) ([]*entity.OrderView, error)
 		GetOrderByPaymentID(context.Context, uuid.UUID) (*entity.OrderView, error)
 		GetOrderByStatus(context.Context, string) ([]*entity.OrderView, error)
+		UpdateOrderStatus(context.Context, *entity.OrderView, string) error
 	}
 )

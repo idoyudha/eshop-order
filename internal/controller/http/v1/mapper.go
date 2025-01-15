@@ -46,6 +46,13 @@ func CreateOrderRequestToOrderEntity(req createOrderRequest, userID uuid.UUID) (
 	}, nil
 }
 
+func UpdateOrderRequestToOrderEntity(orderID uuid.UUID) entity.Order {
+	return entity.Order{
+		ID:        orderID,
+		UpdatedAt: time.Now(),
+	}
+}
+
 func OrderEntityToCreatedOrderResponse(order entity.Order) orderResponse {
 	var items []itemsOrderResponse
 	for _, item := range order.Items {
