@@ -71,13 +71,6 @@ func (u *OrderQueryUseCase) GetOrderByStatus(ctx context.Context, status string)
 	return u.repoPostgresQuery.GetByStatus(ctx, status)
 }
 
-func (u *OrderQueryUseCase) UpdateOrderStatus(ctx context.Context, order *entity.OrderView, orderStatus string) error {
-	switch orderStatus {
-	case entity.ORDER_DELIVERED:
-		order.SetStatusToDelivered()
-	case entity.ORDER_REJECTED:
-		order.SetStatusToRejected()
-	}
-
+func (u *OrderQueryUseCase) UpdateOrderViewStatus(ctx context.Context, order *entity.OrderView) error {
 	return u.repoPostgresQuery.UpdateStatus(ctx, order)
 }

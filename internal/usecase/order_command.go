@@ -265,54 +265,6 @@ func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Ord
 	return nil
 }
 
-type kafkaProductAmountUpdated struct {
-	ProductID uuid.UUID `json:"product_id"`
-	Quantity  int64     `json:"quantity"`
-}
-
-// TODO: create kafka sale-created
-// type kafkaSaleCreated struct {
-// }
-
-// func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *entity.Order, isAcceptedPayment bool, isOrderAccepted bool) error {
-// 	err := u.repoPostgresCommand.UpdateStatus(ctx, order)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	if order.Status == entity.ORDER_ON_DELIVERY {
-// 		if isOrderAccepted {
-// 			order.SetStatusToDelivered()
-// 			// TODO: send publisher to kafka sale-created
-// 		}
-// 		for _, item := range order.Items {
-// 			message := kafkaProductAmountUpdated{
-// 				ProductID: item.ProductID,
-// 				Quantity:  item.ProductQuantity,
-// 			}
-
-// 			err = u.producer.Publish(
-// 				constant.ProductQuantityUpdatedTopic,
-// 				[]byte(item.ProductID.String()),
-// 				message,
-// 			)
-// 			if err != nil {
-// 				// TODO: handle error, cancel the update if failed. or try use retry mechanism
-// 				return fmt.Errorf("failed to produce kafka message: %w", err)
-// 			}
-// 		}
-// 	}
-// 	if order.Status == entity.ORDER_PENDING {
-// 		if isAcceptedPayment {
-// 			order.SetStatusToOnDelivery()
-// 		} else {
-// 			order.SetStatusToRejected()
-// 		}
-// 	}
-
-// 	return nil
-// }
-
 func (u *OrderCommandUseCase) UpdateOrderPaymentID(ctx context.Context, order *entity.Order, paymentStatus string) error {
 	switch paymentStatus {
 	case entity.ORDER_PAYMENT_APPROVED:
@@ -334,5 +286,21 @@ func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *enti
 		order.SetStatusToRejected()
 	}
 
-	return u.repoPostgresCommand.UpdateStatus(ctx, order)
+	err := u.repoPostgresCommand.UpdateStatus(ctx, order)
+	if err != nil {
+		return fmt.Errorf("failed to update order status: %w", err)
+	}
+
+	message := dto.OrderEntityToKafkaOrderStatusUpdatedMessage(order)
+
+	err = u.producer.Publish(
+		constant.OrderCreatedTopic,
+		[]byte(order.ID.String()),
+		message,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to produce kafka message: %w", err)
+	}
+
+	return nil
 }

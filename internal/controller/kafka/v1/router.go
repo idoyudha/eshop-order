@@ -186,7 +186,6 @@ func (r *kafkaConsumerRoutes) handleOrderViewCreated(msg *kafka.Message) error {
 
 func (r *kafkaConsumerRoutes) handleOrderPaymentUpdated(msg *kafka.Message) error {
 	var message dto.KafkaPaymentUpdated
-
 	if err := json.Unmarshal(msg.Value, &message); err != nil {
 		r.l.Error(err, "http - v1 - kafkaConsumerRoutes - handleOrderPaymentUpdated")
 		return err
@@ -205,6 +204,23 @@ func (r *kafkaConsumerRoutes) handleOrderPaymentUpdated(msg *kafka.Message) erro
 	err = r.ucoq.UpdateOrderViewPayment(context.Background(), &orderViewEntity, message.Status)
 	if err != nil {
 		r.l.Error(err, "http - v1 - kafkaConsumerRoutes - handleOrderPaymentUpdated")
+		return fmt.Errorf("failed to update order view: %w", err)
+	}
+
+	return nil
+}
+
+func (r *kafkaConsumerRoutes) handleOrderStatusUpdated(msg *kafka.Message) error {
+	var message dto.KafkaOrderStatusUpdated
+	if err := json.Unmarshal(msg.Value, &message); err != nil {
+		r.l.Error(err, "http - v1 - kafkaConsumerRoutes - handleOrderStatusUpdated")
+		return err
+	}
+
+	orderViewEntity := dto.OrderStatusUpdatedMessageToOrderViewEntity(message)
+	err := r.ucoq.UpdateOrderViewStatus(context.Background(), &orderViewEntity)
+	if err != nil {
+		r.l.Error(err, "http - v1 - kafkaConsumerRoutes - handleOrderStatusUpdated")
 		return fmt.Errorf("failed to update order view: %w", err)
 	}
 

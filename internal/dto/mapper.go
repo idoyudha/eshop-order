@@ -55,3 +55,17 @@ func PaymentMessageToOrderViewEntity(message KafkaPaymentUpdated) entity.OrderVi
 		UpdatedAt:        time.Now(),
 	}
 }
+
+func OrderEntityToKafkaOrderStatusUpdatedMessage(order *entity.Order) KafkaOrderStatusUpdated {
+	return KafkaOrderStatusUpdated{
+		OrderID: order.ID,
+		Status:  order.Status,
+	}
+}
+
+func OrderStatusUpdatedMessageToOrderViewEntity(msg KafkaOrderStatusUpdated) entity.OrderView {
+	return entity.OrderView{
+		OrderID: msg.OrderID,
+		Status:  msg.Status,
+	}
+}
