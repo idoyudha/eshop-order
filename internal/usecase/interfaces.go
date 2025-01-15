@@ -39,6 +39,6 @@ type (
 		GetOrderByUserID(context.Context, uuid.UUID) ([]*entity.OrderView, error)
 		GetOrderByPaymentID(context.Context, uuid.UUID) (*entity.OrderView, error)
 		GetOrderByStatus(context.Context, string) ([]*entity.OrderView, error)
-		UpdateOrderStatus(context.Context, *entity.OrderView, string) error
+		UpdateOrderViewStatus(context.Context, *entity.OrderView) error
 	}
 )
