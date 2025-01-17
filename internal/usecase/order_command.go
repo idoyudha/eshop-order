@@ -18,6 +18,7 @@ import (
 
 type OrderCommandUseCase struct {
 	repoPostgresCommand OrderPostgreCommandRepo
+	repoPostgresQuery   OrderPostgreQueryRepo
 	producer            *kafka.ProducerServer
 	warehouseService    config.WarehouseService
 	shippingCostService config.ShippingCostService
@@ -25,12 +26,14 @@ type OrderCommandUseCase struct {
 
 func NewOrderCommandUseCase(
 	repoPostgresCommand OrderPostgreCommandRepo,
+	repoPostgresQuery OrderPostgreQueryRepo,
 	producer *kafka.ProducerServer,
 	warehouseService config.WarehouseService,
 	shippingCostService config.ShippingCostService,
 ) *OrderCommandUseCase {
 	return &OrderCommandUseCase{
 		repoPostgresCommand,
+		repoPostgresQuery,
 		producer,
 		warehouseService,
 		shippingCostService,
@@ -308,7 +311,13 @@ func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *enti
 func (u *OrderCommandUseCase) SendSalesReport(ctx context.Context, id uuid.UUID) error {
 	order, err := u.repoPostgresCommand.GetByID(ctx, id)
 
-	message := dto.OrderEntityToKafkaSaleCreatedMessage(order)
+	// TODO: get product price
+	products, err := u.repoPostgresQuery.GetProductPriceByOrderID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to get product price: %w", err)
+	}
+
+	message := dto.OrderEntityToKafkaSaleCreatedMessage(order, products)
 
 	err = u.producer.Publish(
 		constant.SaleCreated,

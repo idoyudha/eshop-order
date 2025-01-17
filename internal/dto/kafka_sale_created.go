@@ -11,4 +11,5 @@ type KafkaSaleCreated struct {
 type KafkaSaleItemCreated struct {
 	ProductID uuid.UUID `json:"product_id"`
 	Quantity  int64     `json:"quantity"`
+	Price     float64   `json:"price"`
 }

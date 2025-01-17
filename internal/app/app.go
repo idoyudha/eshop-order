@@ -46,13 +46,14 @@ func Run(cfg *config.Config) {
 
 	orderCommandUseCase := usecase.NewOrderCommandUseCase(
 		commandrepo.NewOrderPostgreCommandRepo(postgreSQLCommand),
+		queryrepo.NewOrderPostgreQueryRepo(postgreSQLQuery),
 		kafkaProducer,
 		cfg.WarehouseService,
 		cfg.ShippingCostService,
 	)
 
 	orderQueryUseCase := usecase.NewOrderQueryUseCase(
-		queryrepo.NewOrderPostgreCommandRepo(postgreSQLQuery),
+		queryrepo.NewOrderPostgreQueryRepo(postgreSQLQuery),
 	)
 
 	// HTTP Server

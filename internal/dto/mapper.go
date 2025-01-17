@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/idoyudha/eshop-order/internal/entity"
 )
 
@@ -70,20 +71,21 @@ func OrderStatusUpdatedMessageToOrderViewEntity(msg KafkaOrderStatusUpdated) ent
 	}
 }
 
-func OrderEntityToKafkaSaleCreatedMessage(order *entity.Order) KafkaSaleCreated {
+func OrderEntityToKafkaSaleCreatedMessage(order *entity.Order, products map[uuid.UUID]float64) KafkaSaleCreated {
 	return KafkaSaleCreated{
 		OrderID: order.ID,
 		UserID:  order.UserID,
-		Items:   orderItemEntityToKafkaSaleItemsCreated(order.Items),
+		Items:   orderItemEntityToKafkaSaleItemsCreated(order.Items, products),
 	}
 }
 
-func orderItemEntityToKafkaSaleItemsCreated(items []entity.OrderItem) []KafkaSaleItemCreated {
+func orderItemEntityToKafkaSaleItemsCreated(items []entity.OrderItem, products map[uuid.UUID]float64) []KafkaSaleItemCreated {
 	var kafkaItems []KafkaSaleItemCreated
 	for _, item := range items {
 		kafkaItems = append(kafkaItems, KafkaSaleItemCreated{
 			ProductID: item.ProductID,
 			Quantity:  item.ProductQuantity,
+			Price:     products[item.ProductID],
 		})
 	}
 

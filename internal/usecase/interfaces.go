@@ -24,6 +24,7 @@ type (
 		GetByPaymentID(context.Context, uuid.UUID) (*entity.OrderView, error)
 		GetByStatus(context.Context, string) ([]*entity.OrderView, error)
 		UpdateStatus(context.Context, *entity.OrderView) error
+		GetProductPriceByOrderID(context.Context, uuid.UUID) (map[uuid.UUID]float64, error)
 	}
 
 	OrderCommand interface {
