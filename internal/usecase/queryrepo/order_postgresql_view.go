@@ -428,6 +428,7 @@ func (r *OrderPostgreQueryRepo) UpdateStatus(ctx context.Context, orderView *ent
 		return errStmt
 	}
 	defer stmt.Close()
+
 	_, updateErr := stmt.ExecContext(ctx, orderView.Status, orderView.UpdatedAt, orderView.OrderID)
 	if updateErr != nil {
 		return updateErr
@@ -439,7 +440,7 @@ func (r *OrderPostgreQueryRepo) UpdateStatus(ctx context.Context, orderView *ent
 const queryGetProductPriceByOrderID = `
 	SELECT oiv.product_id, oiv.product_price
 	FROM orders_view ov
-	LEFT JOIN order_items_view oiv ON ov.order_id = oiv.order_id
+	LEFT JOIN order_items_view oiv ON ov.id = oiv.order_view_id
 	WHERE ov.order_id = $1
 `
 

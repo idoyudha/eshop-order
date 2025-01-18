@@ -132,6 +132,7 @@ func kafkaOrderCreatedToOrderView(msg *dto.KafkaOrderCreated) entity.OrderView {
 }
 
 func (r *kafkaConsumerRoutes) handleOrderViewCreated(msg *kafka.Message) error {
+	r.l.Info("Order creating", "http - v1 - kafkaConsumerRoutes - handleOrderViewCreated")
 	var message dto.KafkaOrderCreated
 
 	if err := json.Unmarshal(msg.Value, &message); err != nil {
@@ -189,6 +190,7 @@ func (r *kafkaConsumerRoutes) handleOrderViewCreated(msg *kafka.Message) error {
 }
 
 func (r *kafkaConsumerRoutes) handleOrderPaymentUpdated(msg *kafka.Message) error {
+	r.l.Info("Order payment updating", "http - v1 - kafkaConsumerRoutes - handleOrderPaymentUpdated")
 	var message dto.KafkaPaymentUpdated
 	if err := json.Unmarshal(msg.Value, &message); err != nil {
 		r.l.Error(err, "http - v1 - kafkaConsumerRoutes - handleOrderPaymentUpdated")
@@ -215,6 +217,7 @@ func (r *kafkaConsumerRoutes) handleOrderPaymentUpdated(msg *kafka.Message) erro
 }
 
 func (r *kafkaConsumerRoutes) handleOrderStatusUpdated(msg *kafka.Message) error {
+	r.l.Info("Order status updating", "http - v1 - kafkaConsumerRoutes - handleOrderStatusUpdated")
 	var message dto.KafkaOrderStatusUpdated
 	if err := json.Unmarshal(msg.Value, &message); err != nil {
 		r.l.Error(err, "http - v1 - kafkaConsumerRoutes - handleOrderStatusUpdated")

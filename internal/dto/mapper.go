@@ -66,8 +66,9 @@ func OrderEntityToKafkaOrderStatusUpdatedMessage(order *entity.Order) KafkaOrder
 
 func OrderStatusUpdatedMessageToOrderViewEntity(msg KafkaOrderStatusUpdated) entity.OrderView {
 	return entity.OrderView{
-		OrderID: msg.OrderID,
-		Status:  msg.Status,
+		OrderID:   msg.OrderID,
+		Status:    msg.Status,
+		UpdatedAt: time.Now(),
 	}
 }
 

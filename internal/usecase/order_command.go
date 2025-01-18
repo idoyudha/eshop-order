@@ -311,7 +311,7 @@ func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *enti
 func (u *OrderCommandUseCase) SendSalesReport(ctx context.Context, id uuid.UUID) error {
 	order, err := u.repoPostgresCommand.GetByID(ctx, id)
 	if err != nil {
-		return fmt.Errorf("failed to get order: %w", err)
+		return fmt.Errorf("failed to get order for sales report: %w", err)
 	}
 
 	products, err := u.repoPostgresQuery.GetProductPriceByOrderID(ctx, id)
