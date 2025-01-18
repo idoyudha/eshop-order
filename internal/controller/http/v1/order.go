@@ -31,7 +31,7 @@ func newOrderRoutes(
 		h.GET("/user", r.getOrderByUserID)
 		h.GET("/:id", r.getOrderByID)
 		h.GET("", r.getAllOrders)
-		h.PATCH("/:id", r.updateOrderStatus)
+		h.PATCH("/:id/status", r.updateOrderStatus)
 	}
 }
 

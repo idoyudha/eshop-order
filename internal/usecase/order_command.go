@@ -297,7 +297,7 @@ func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *enti
 	message := dto.OrderEntityToKafkaOrderStatusUpdatedMessage(order)
 
 	err = u.producer.Publish(
-		constant.OrderCreatedTopic,
+		constant.OrderStatusUpdatedTopic,
 		[]byte(uuid.New().String()),
 		message,
 	)

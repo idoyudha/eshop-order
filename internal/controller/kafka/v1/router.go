@@ -79,6 +79,10 @@ func KafkaNewRouter(
 				if err := routes.handleOrderPaymentUpdated(ev); err != nil {
 					l.Error("Failed to handle order payment updated: %w", err)
 				}
+			case constant.OrderStatusUpdatedTopic:
+				if err := routes.handleOrderStatusUpdated(ev); err != nil {
+					l.Error("Failed to handle order status updated: %w", err)
+				}
 			default:
 				l.Info("Unknown topic: %s", *ev.TopicPartition.Topic)
 			}
