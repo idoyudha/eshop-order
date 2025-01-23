@@ -62,6 +62,11 @@ type (
 	Kafka struct {
 		Broker string `env-required:"true" env:"KAFKA_BROKER"`
 	}
+
+	Redis struct {
+		RedisURL      string `env-required:"true" env:"REDIS_URL"`
+		RedisPassword string `env-required:"true" env:"REDIS_PASSWORD"`
+	}
 )
 
 func NewConfig() (*Config, error) {
