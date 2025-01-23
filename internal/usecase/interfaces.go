@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/idoyudha/eshop-order/internal/entity"
@@ -13,6 +14,10 @@ type (
 		UpdateStatus(context.Context, *entity.Order) error
 		UpdatePaymentID(context.Context, *entity.Order) error
 		GetByID(context.Context, uuid.UUID) (*entity.Order, error)
+	}
+
+	OrderRedisRepo interface {
+		Set(context.Context, uuid.UUID, string, time.Duration) error
 	}
 
 	OrderPostgreQueryRepo interface {

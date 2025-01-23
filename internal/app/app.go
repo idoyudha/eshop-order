@@ -17,6 +17,7 @@ import (
 	"github.com/idoyudha/eshop-order/pkg/logger"
 	"github.com/idoyudha/eshop-order/pkg/postgresql/postgrecommand"
 	"github.com/idoyudha/eshop-order/pkg/postgresql/postgrequery"
+	"github.com/idoyudha/eshop-order/pkg/redis"
 )
 
 func Run(cfg *config.Config) {
@@ -44,12 +45,19 @@ func Run(cfg *config.Config) {
 		l.Fatal("app - Run - postgrequery.NewPostgres: ", err)
 	}
 
+	redisClient, err := redis.NewRedis(cfg.Redis)
+	if err != nil {
+		l.Fatal("app - Run - redis.NewRedis: ", err)
+	}
+
 	orderCommandUseCase := usecase.NewOrderCommandUseCase(
 		commandrepo.NewOrderPostgreCommandRepo(postgreSQLCommand),
 		queryrepo.NewOrderPostgreQueryRepo(postgreSQLQuery),
+		commandrepo.NewOrderRedisRepo(redisClient),
 		kafkaProducer,
 		cfg.WarehouseService,
 		cfg.ShippingCostService,
+		cfg.Constant,
 	)
 
 	orderQueryUseCase := usecase.NewOrderQueryUseCase(

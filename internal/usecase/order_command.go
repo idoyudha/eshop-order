@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/idoyudha/eshop-order/config"
@@ -19,24 +20,30 @@ import (
 type OrderCommandUseCase struct {
 	repoPostgresCommand OrderPostgreCommandRepo
 	repoPostgresQuery   OrderPostgreQueryRepo
+	repoRedisCommand    OrderRedisRepo
 	producer            *kafka.ProducerServer
 	warehouseService    config.WarehouseService
 	shippingCostService config.ShippingCostService
+	constant            config.Constant
 }
 
 func NewOrderCommandUseCase(
 	repoPostgresCommand OrderPostgreCommandRepo,
 	repoPostgresQuery OrderPostgreQueryRepo,
+	repoRedisCommand OrderRedisRepo,
 	producer *kafka.ProducerServer,
 	warehouseService config.WarehouseService,
 	shippingCostService config.ShippingCostService,
+	constant config.Constant,
 ) *OrderCommandUseCase {
 	return &OrderCommandUseCase{
 		repoPostgresCommand,
 		repoPostgresQuery,
+		repoRedisCommand,
 		producer,
 		warehouseService,
 		shippingCostService,
+		constant,
 	}
 }
 
@@ -206,6 +213,7 @@ func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Ord
 	if err != nil {
 		return fmt.Errorf("failed to generate order address id: %w", err)
 	}
+
 	// 1. create stock movement
 	var stockRequest stockMovementRequest
 	var items []orderItemRequest
@@ -265,6 +273,13 @@ func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Ord
 		// TODO: handle error, cancel the update if failed. or try use retry mechanism
 		return fmt.Errorf("failed to produce kafka message: %w", err)
 	}
+
+	// 5. send scheduled task to upload the payment proof
+	err = u.repoRedisCommand.Set(ctx, order.ID, "", time.Duration(u.constant.OrderTimeHours)*time.Hour)
+	if err != nil {
+		return fmt.Errorf("failed to set payment proof in redis: %w", err)
+	}
+
 	return nil
 }
 
