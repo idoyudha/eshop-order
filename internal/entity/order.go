@@ -12,6 +12,7 @@ const (
 	ORDER_ON_DELIVERY      = "ON_DELIVERY"
 	ORDER_REJECTED         = "REJECTED"
 	ORDER_DELIVERED        = "DELIVERED"
+	ORDER_EXPIRED          = "EXPIRED"
 )
 
 const (

@@ -291,6 +291,11 @@ func (u *OrderCommandUseCase) UpdateOrderPaymentID(ctx context.Context, order *e
 		order.SetStatusToRejected()
 	}
 
+	err := u.repoRedisCommand.Delete(ctx, order.ID)
+	if err != nil {
+		return fmt.Errorf("failed to delete order in redis: %w", err)
+	}
+
 	// if payment rejected, call moveout in warehouse service, put back to warehouse
 
 	return u.repoPostgresCommand.UpdatePaymentID(ctx, order)

@@ -18,6 +18,7 @@ type (
 
 	OrderRedisRepo interface {
 		Set(context.Context, uuid.UUID, string, time.Duration) error
+		Delete(context.Context, uuid.UUID) error
 	}
 
 	OrderPostgreQueryRepo interface {
