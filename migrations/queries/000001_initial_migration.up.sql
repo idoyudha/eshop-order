@@ -1,21 +1,17 @@
-CREATE TYPE "order_status" AS ENUM (
-  'PENDING',
-  'PAYMENT_ACCEPTED',
-  'ON_DELIVERY',
-  'REJECTED',
-  'DELIVERED',
-  'EXPIRED',
-  'PENDING',
-  'APPROVED',
-  'REJECTED',
-  'CANCELLED'
-);
+-- CREATE TYPE "order_status" AS ENUM (
+--   'PENDING',
+--   'PAYMENT_ACCEPTED',
+--   'ON_DELIVERY',
+--   'DELIVERED',
+--   'REJECTED',
+--   'EXPIRED'
+-- );
 
-CREATE TYPE "payment_status" AS ENUM (
-  'PENDING',
-  'APPROVED',
-  'REJECTED'
-);
+-- CREATE TYPE "payment_status" AS ENUM (
+--   'PENDING',
+--   'APPROVED',
+--   'REJECTED'
+-- );
 
 CREATE TABLE IF NOT EXISTS "orders_view" (
   "id" uuid PRIMARY KEY,
