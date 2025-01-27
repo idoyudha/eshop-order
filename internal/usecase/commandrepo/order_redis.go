@@ -34,3 +34,8 @@ func (r *OrderRedisRepo) Delete(ctx context.Context, orderID uuid.UUID) error {
 	key := getOrderKey(orderID)
 	return r.RedisClient.Client.Del(ctx, key).Err()
 }
+
+func (r *OrderRedisRepo) GetTTL(ctx context.Context, orderID uuid.UUID) (time.Duration, error) {
+	key := getOrderKey(orderID)
+	return r.RedisClient.Client.TTL(ctx, key).Result()
+}

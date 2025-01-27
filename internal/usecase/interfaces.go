@@ -19,6 +19,7 @@ type (
 	OrderRedisRepo interface {
 		Set(context.Context, uuid.UUID, string, time.Duration) error
 		Delete(context.Context, uuid.UUID) error
+		GetTTL(context.Context, uuid.UUID) (time.Duration, error)
 	}
 
 	OrderPostgreQueryRepo interface {
@@ -38,6 +39,7 @@ type (
 		UpdateOrderStatus(context.Context, *entity.Order, string) error
 		UpdateOrderPaymentID(context.Context, *entity.Order, string) error
 		SendSalesReport(context.Context, uuid.UUID) error
+		GetOrderTTL(context.Context, uuid.UUID) (time.Duration, error)
 	}
 
 	OrderQuery interface {

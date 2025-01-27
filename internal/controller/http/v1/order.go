@@ -32,6 +32,7 @@ func newOrderRoutes(
 		h.GET("/:id", r.getOrderByID)
 		h.GET("", r.getAllOrders)
 		h.PATCH("/:id/status", r.updateOrderStatus)
+		h.GET("/:id/ttl", r.getOrderTTL)
 	}
 }
 
@@ -209,4 +210,29 @@ func (r *orderRoutes) updateOrderStatus(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, newUpdateSuccess(nil))
+}
+
+type orderTTLResponse struct {
+	TTL time.Duration `json:"ttl_seconds"`
+}
+
+func (r *orderRoutes) getOrderTTL(ctx *gin.Context) {
+	orderID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		r.l.Error(err, "http - v1 - orderRoutes - getOrderTTL")
+		ctx.JSON(http.StatusBadRequest, newBadRequestError(err.Error()))
+		return
+	}
+
+	ttl, err := r.uoc.GetOrderTTL(ctx.Request.Context(), orderID)
+	if err != nil {
+		r.l.Error(err, "http - v1 - orderRoutes - getOrderTTL")
+		ctx.JSON(http.StatusInternalServerError, newInternalServerError(err.Error()))
+		return
+	}
+
+	var response orderTTLResponse
+	response.TTL = ttl
+
+	ctx.JSON(http.StatusOK, newGetSuccess(response))
 }

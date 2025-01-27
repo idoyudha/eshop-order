@@ -354,3 +354,7 @@ func (u *OrderCommandUseCase) SendSalesReport(ctx context.Context, id uuid.UUID)
 
 	return err
 }
+
+func (u *OrderCommandUseCase) GetOrderTTL(ctx context.Context, id uuid.UUID) (time.Duration, error) {
+	return u.repoRedisCommand.GetTTL(ctx, id)
+}
