@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/google/uuid"
@@ -55,6 +56,7 @@ func NewRedisScheduledEvents(
 			defer pubsub.Close()
 
 			for msg := range pubsub.Channel() {
+				log.Println("message received from redis", msg.Payload)
 				if err := events.handleOrderExpired(msg.Payload); err != nil {
 					events.l.Error(err, "http - v1 - redisScheduledEvents - handleMessage")
 				}
@@ -64,12 +66,14 @@ func NewRedisScheduledEvents(
 	return nil
 }
 
-func (e *redisScheduledEvents) handleOrderExpired(orderID string) error {
+func (e *redisScheduledEvents) handleOrderExpired(expiredKey string) error {
 	e.l.Info("Order expired", "http - v1 - redisScheduledEvents - handleOrderExpired")
 
+	parts := strings.Split(expiredKey, ":")
 	order := entity.Order{
-		ID: uuid.MustParse(orderID),
+		ID: uuid.MustParse(parts[1]),
 	}
+
 	err := e.ucoc.UpdateOrderStatus(context.Background(), &order, entity.ORDER_EXPIRED)
 	if err != nil {
 		return err

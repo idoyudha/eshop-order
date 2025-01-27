@@ -307,6 +307,8 @@ func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *enti
 		order.SetStatusToDelivered()
 	case entity.ORDER_REJECTED:
 		order.SetStatusToRejected()
+	case entity.ORDER_EXPIRED:
+		order.SetStatusToExpired()
 	}
 
 	err := u.repoPostgresCommand.UpdateStatus(ctx, order)

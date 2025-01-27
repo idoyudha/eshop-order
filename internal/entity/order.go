@@ -64,6 +64,11 @@ func (o *Order) SetStatusToDelivered() {
 	o.Status = ORDER_DELIVERED
 }
 
+// order is expired
+func (o *Order) SetStatusToExpired() {
+	o.Status = ORDER_EXPIRED
+}
+
 func (o *Order) AddShippingCost(shippingCost float64) {
 	o.TotalPrice += shippingCost
 }
