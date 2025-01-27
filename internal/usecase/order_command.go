@@ -355,6 +355,11 @@ func (u *OrderCommandUseCase) SendSalesReport(ctx context.Context, id uuid.UUID)
 	return err
 }
 
-func (u *OrderCommandUseCase) GetOrderTTL(ctx context.Context, id uuid.UUID) (time.Duration, error) {
-	return u.repoRedisCommand.GetTTL(ctx, id)
+func (u *OrderCommandUseCase) GetOrderTTL(ctx context.Context, id uuid.UUID) (int, error) {
+	ttlNanoSecs, err := u.repoRedisCommand.GetTTL(ctx, id)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get order TTL: %w", err)
+	}
+
+	return int(ttlNanoSecs.Seconds()), nil
 }

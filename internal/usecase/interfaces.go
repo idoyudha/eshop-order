@@ -39,7 +39,7 @@ type (
 		UpdateOrderStatus(context.Context, *entity.Order, string) error
 		UpdateOrderPaymentID(context.Context, *entity.Order, string) error
 		SendSalesReport(context.Context, uuid.UUID) error
-		GetOrderTTL(context.Context, uuid.UUID) (time.Duration, error)
+		GetOrderTTL(context.Context, uuid.UUID) (int, error)
 	}
 
 	OrderQuery interface {

@@ -213,7 +213,7 @@ func (r *orderRoutes) updateOrderStatus(ctx *gin.Context) {
 }
 
 type orderTTLResponse struct {
-	TTL time.Duration `json:"ttl_seconds"`
+	TTL int `json:"ttl_seconds"`
 }
 
 func (r *orderRoutes) getOrderTTL(ctx *gin.Context) {
