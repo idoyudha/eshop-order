@@ -10,8 +10,9 @@ const (
 	ORDER_PENDING          = "PENDING"
 	ORDER_PAYMENT_ACCEPTED = "PAYMENT_ACCEPTED"
 	ORDER_ON_DELIVERY      = "ON_DELIVERY"
-	ORDER_REJECTED         = "REJECTED"
 	ORDER_DELIVERED        = "DELIVERED"
+	ORDER_REJECTED         = "REJECTED"
+	ORDER_EXPIRED          = "EXPIRED"
 )
 
 const (
@@ -61,6 +62,11 @@ func (o *Order) SetStatusToPending() {
 // user accept the delivery
 func (o *Order) SetStatusToDelivered() {
 	o.Status = ORDER_DELIVERED
+}
+
+// order is expired
+func (o *Order) SetStatusToExpired() {
+	o.Status = ORDER_EXPIRED
 }
 
 func (o *Order) AddShippingCost(shippingCost float64) {

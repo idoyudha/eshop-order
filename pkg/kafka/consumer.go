@@ -49,6 +49,7 @@ func NewKafkaConsumer(brokerURL string) (*ConsumerServer, error) {
 	topics := []string{
 		constant.OrderCreatedTopic,
 		constant.PaymentUpdatedTopic,
+		constant.OrderStatusUpdatedTopic,
 	}
 
 	log.Printf("attempting to subscribe to topics: %v", topics)

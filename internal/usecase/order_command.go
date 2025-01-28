@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/idoyudha/eshop-order/config"
@@ -18,22 +19,31 @@ import (
 
 type OrderCommandUseCase struct {
 	repoPostgresCommand OrderPostgreCommandRepo
+	repoPostgresQuery   OrderPostgreQueryRepo
+	repoRedisCommand    OrderRedisRepo
 	producer            *kafka.ProducerServer
 	warehouseService    config.WarehouseService
 	shippingCostService config.ShippingCostService
+	constant            config.Constant
 }
 
 func NewOrderCommandUseCase(
 	repoPostgresCommand OrderPostgreCommandRepo,
+	repoPostgresQuery OrderPostgreQueryRepo,
+	repoRedisCommand OrderRedisRepo,
 	producer *kafka.ProducerServer,
 	warehouseService config.WarehouseService,
 	shippingCostService config.ShippingCostService,
+	constant config.Constant,
 ) *OrderCommandUseCase {
 	return &OrderCommandUseCase{
 		repoPostgresCommand,
+		repoPostgresQuery,
+		repoRedisCommand,
 		producer,
 		warehouseService,
 		shippingCostService,
+		constant,
 	}
 }
 
@@ -203,6 +213,7 @@ func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Ord
 	if err != nil {
 		return fmt.Errorf("failed to generate order address id: %w", err)
 	}
+
 	// 1. create stock movement
 	var stockRequest stockMovementRequest
 	var items []orderItemRequest
@@ -262,56 +273,15 @@ func (u *OrderCommandUseCase) CreateOrder(ctx context.Context, order *entity.Ord
 		// TODO: handle error, cancel the update if failed. or try use retry mechanism
 		return fmt.Errorf("failed to produce kafka message: %w", err)
 	}
+
+	// 5. send scheduled task to upload the payment proof
+	err = u.repoRedisCommand.Set(ctx, order.ID, "", time.Duration(u.constant.OrderTimeHours)*time.Hour)
+	if err != nil {
+		return fmt.Errorf("failed to set payment proof in redis: %w", err)
+	}
+
 	return nil
 }
-
-type kafkaProductAmountUpdated struct {
-	ProductID uuid.UUID `json:"product_id"`
-	Quantity  int64     `json:"quantity"`
-}
-
-// TODO: create kafka sale-created
-// type kafkaSaleCreated struct {
-// }
-
-// func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *entity.Order, isAcceptedPayment bool, isOrderAccepted bool) error {
-// 	err := u.repoPostgresCommand.UpdateStatus(ctx, order)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	if order.Status == entity.ORDER_ON_DELIVERY {
-// 		if isOrderAccepted {
-// 			order.SetStatusToDelivered()
-// 			// TODO: send publisher to kafka sale-created
-// 		}
-// 		for _, item := range order.Items {
-// 			message := kafkaProductAmountUpdated{
-// 				ProductID: item.ProductID,
-// 				Quantity:  item.ProductQuantity,
-// 			}
-
-// 			err = u.producer.Publish(
-// 				constant.ProductQuantityUpdatedTopic,
-// 				[]byte(item.ProductID.String()),
-// 				message,
-// 			)
-// 			if err != nil {
-// 				// TODO: handle error, cancel the update if failed. or try use retry mechanism
-// 				return fmt.Errorf("failed to produce kafka message: %w", err)
-// 			}
-// 		}
-// 	}
-// 	if order.Status == entity.ORDER_PENDING {
-// 		if isAcceptedPayment {
-// 			order.SetStatusToOnDelivery()
-// 		} else {
-// 			order.SetStatusToRejected()
-// 		}
-// 	}
-
-// 	return nil
-// }
 
 func (u *OrderCommandUseCase) UpdateOrderPaymentID(ctx context.Context, order *entity.Order, paymentStatus string) error {
 	switch paymentStatus {
@@ -321,7 +291,75 @@ func (u *OrderCommandUseCase) UpdateOrderPaymentID(ctx context.Context, order *e
 		order.SetStatusToRejected()
 	}
 
+	err := u.repoRedisCommand.Delete(ctx, order.ID)
+	if err != nil {
+		return fmt.Errorf("failed to delete order in redis: %w", err)
+	}
+
 	// if payment rejected, call moveout in warehouse service, put back to warehouse
 
 	return u.repoPostgresCommand.UpdatePaymentID(ctx, order)
+}
+
+func (u *OrderCommandUseCase) UpdateOrderStatus(ctx context.Context, order *entity.Order, orderStatus string) error {
+	switch orderStatus {
+	case entity.ORDER_DELIVERED:
+		order.SetStatusToDelivered()
+	case entity.ORDER_REJECTED:
+		order.SetStatusToRejected()
+	case entity.ORDER_EXPIRED:
+		order.SetStatusToExpired()
+	}
+
+	err := u.repoPostgresCommand.UpdateStatus(ctx, order)
+	if err != nil {
+		return fmt.Errorf("failed to update order status: %w", err)
+	}
+
+	message := dto.OrderEntityToKafkaOrderStatusUpdatedMessage(order)
+
+	err = u.producer.Publish(
+		constant.OrderStatusUpdatedTopic,
+		[]byte(uuid.New().String()),
+		message,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to produce kafka message: %w", err)
+	}
+
+	return nil
+}
+
+func (u *OrderCommandUseCase) SendSalesReport(ctx context.Context, id uuid.UUID) error {
+	order, err := u.repoPostgresCommand.GetByID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to get order for sales report: %w", err)
+	}
+
+	products, err := u.repoPostgresQuery.GetProductPriceByOrderID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to get product price: %w", err)
+	}
+
+	message := dto.OrderEntityToKafkaSaleCreatedMessage(order, products)
+
+	err = u.producer.Publish(
+		constant.SaleCreated,
+		[]byte(uuid.New().String()),
+		message,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to produce kafka message: %w", err)
+	}
+
+	return err
+}
+
+func (u *OrderCommandUseCase) GetOrderTTL(ctx context.Context, id uuid.UUID) (int, error) {
+	ttlNanoSecs, err := u.repoRedisCommand.GetTTL(ctx, id)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get order TTL: %w", err)
+	}
+
+	return int(ttlNanoSecs.Seconds()), nil
 }

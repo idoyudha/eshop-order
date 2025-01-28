@@ -14,7 +14,7 @@ type OrderPostgreQueryRepo struct {
 	*postgrequery.PostgresQuery
 }
 
-func NewOrderPostgreCommandRepo(conn *postgrequery.PostgresQuery) *OrderPostgreQueryRepo {
+func NewOrderPostgreQueryRepo(conn *postgrequery.PostgresQuery) *OrderPostgreQueryRepo {
 	return &OrderPostgreQueryRepo{
 		PostgresQuery: conn,
 	}
@@ -418,4 +418,51 @@ func (r *OrderPostgreQueryRepo) scanMultipleOrders(ctx context.Context, query st
 	}
 
 	return orders, nil
+}
+
+const queryUpdateStatusByOrderID = `UPDATE orders_view SET status = $1, updated_at = $2 WHERE order_id = $3;`
+
+func (r *OrderPostgreQueryRepo) UpdateStatus(ctx context.Context, orderView *entity.OrderView) error {
+	stmt, errStmt := r.Conn.PrepareContext(ctx, queryUpdateStatusByOrderID)
+	if errStmt != nil {
+		return errStmt
+	}
+	defer stmt.Close()
+
+	_, updateErr := stmt.ExecContext(ctx, orderView.Status, orderView.UpdatedAt, orderView.OrderID)
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}
+
+const queryGetProductPriceByOrderID = `
+	SELECT oiv.product_id, oiv.product_price
+	FROM orders_view ov
+	LEFT JOIN order_items_view oiv ON ov.id = oiv.order_view_id
+	WHERE ov.order_id = $1
+`
+
+func (r *OrderPostgreQueryRepo) GetProductPriceByOrderID(ctx context.Context, orderID uuid.UUID) (map[uuid.UUID]float64, error) {
+	rows, err := r.Conn.QueryContext(ctx, queryGetProductPriceByOrderID, orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := make(map[uuid.UUID]float64)
+	for rows.Next() {
+		var productID uuid.UUID
+		var productPrice float64
+		if err := rows.Scan(&productID, &productPrice); err != nil {
+			return nil, err
+		}
+		items[productID] = productPrice
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return items, nil
 }

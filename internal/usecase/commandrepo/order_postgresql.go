@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/idoyudha/eshop-order/internal/entity"
 	"github.com/idoyudha/eshop-order/pkg/postgresql/postgrecommand"
 )
@@ -98,4 +99,43 @@ func (r *OrderPostgreCommandRepo) UpdatePaymentID(ctx context.Context, order *en
 	}
 
 	return nil
+}
+
+const queryGetOrderByID = `
+	SELECT 
+		o.id,
+		o.user_id,
+		oi.product_id as item_product_id,
+		oi.product_quantity as item_product_quantity
+	FROM orders o
+	LEFT JOIN order_items oi ON o.id = oi.order_id
+	WHERE o.id = $1;
+`
+
+func (r *OrderPostgreCommandRepo) GetByID(ctx context.Context, id uuid.UUID) (*entity.Order, error) {
+	stmt, errStmt := r.Conn.PrepareContext(ctx, queryGetOrderByID)
+	if errStmt != nil {
+		return nil, errStmt
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.QueryContext(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var order entity.Order
+	for rows.Next() {
+		var item entity.OrderItem
+		if err := rows.Scan(&order.ID, &order.UserID, &item.ProductID, &item.ProductQuantity); err != nil {
+			return nil, err
+		}
+		order.Items = append(order.Items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &order, nil
 }

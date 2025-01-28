@@ -9,6 +9,7 @@ import (
 	"github.com/idoyudha/eshop-order/config"
 	v1HTTP "github.com/idoyudha/eshop-order/internal/controller/http/v1"
 	v1Kafka "github.com/idoyudha/eshop-order/internal/controller/kafka/v1"
+	"github.com/idoyudha/eshop-order/internal/event"
 	"github.com/idoyudha/eshop-order/internal/usecase"
 	"github.com/idoyudha/eshop-order/internal/usecase/commandrepo"
 	"github.com/idoyudha/eshop-order/internal/usecase/queryrepo"
@@ -17,6 +18,7 @@ import (
 	"github.com/idoyudha/eshop-order/pkg/logger"
 	"github.com/idoyudha/eshop-order/pkg/postgresql/postgrecommand"
 	"github.com/idoyudha/eshop-order/pkg/postgresql/postgrequery"
+	"github.com/idoyudha/eshop-order/pkg/redis"
 )
 
 func Run(cfg *config.Config) {
@@ -44,15 +46,23 @@ func Run(cfg *config.Config) {
 		l.Fatal("app - Run - postgrequery.NewPostgres: ", err)
 	}
 
+	redisClient, err := redis.NewRedis(cfg.Redis)
+	if err != nil {
+		l.Fatal("app - Run - redis.NewRedis: ", err)
+	}
+
 	orderCommandUseCase := usecase.NewOrderCommandUseCase(
 		commandrepo.NewOrderPostgreCommandRepo(postgreSQLCommand),
+		queryrepo.NewOrderPostgreQueryRepo(postgreSQLQuery),
+		commandrepo.NewOrderRedisRepo(redisClient),
 		kafkaProducer,
 		cfg.WarehouseService,
 		cfg.ShippingCostService,
+		cfg.Constant,
 	)
 
 	orderQueryUseCase := usecase.NewOrderQueryUseCase(
-		queryrepo.NewOrderPostgreCommandRepo(postgreSQLQuery),
+		queryrepo.NewOrderPostgreQueryRepo(postgreSQLQuery),
 	)
 
 	// HTTP Server
@@ -65,6 +75,14 @@ func Run(cfg *config.Config) {
 	go func() {
 		if err := v1Kafka.KafkaNewRouter(orderQueryUseCase, orderCommandUseCase, l, kafkaConsumer, cfg.ProductService); err != nil {
 			kafkaErrChan <- err
+		}
+	}()
+
+	// Redis Consumer
+	redisErrChan := make(chan error, 1)
+	go func() {
+		if err := event.NewRedisScheduledEvents(redisClient, orderCommandUseCase, l, cfg.Constant); err != nil {
+			redisErrChan <- err
 		}
 	}()
 

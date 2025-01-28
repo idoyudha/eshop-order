@@ -70,3 +70,7 @@ func (u *OrderQueryUseCase) GetOrderByPaymentID(ctx context.Context, paymentID u
 func (u *OrderQueryUseCase) GetOrderByStatus(ctx context.Context, status string) ([]*entity.OrderView, error) {
 	return u.repoPostgresQuery.GetByStatus(ctx, status)
 }
+
+func (u *OrderQueryUseCase) UpdateOrderViewStatus(ctx context.Context, order *entity.OrderView) error {
+	return u.repoPostgresQuery.UpdateStatus(ctx, order)
+}

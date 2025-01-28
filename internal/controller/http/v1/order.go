@@ -31,6 +31,8 @@ func newOrderRoutes(
 		h.GET("/user", r.getOrderByUserID)
 		h.GET("/:id", r.getOrderByID)
 		h.GET("", r.getAllOrders)
+		h.PATCH("/:id/status", r.updateOrderStatus)
+		h.GET("/:id/ttl", r.getOrderTTL)
 	}
 }
 
@@ -175,6 +177,62 @@ func (r *orderRoutes) getAllOrders(ctx *gin.Context) {
 	}
 
 	response := OrderViewEntityToGetManyOrderResponse(orders)
+
+	ctx.JSON(http.StatusOK, newGetSuccess(response))
+}
+
+type UpdateOrderStatusRequest struct {
+	Status string `json:"status"`
+}
+
+func (r *orderRoutes) updateOrderStatus(ctx *gin.Context) {
+	orderID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		r.l.Error(err, "http - v1 - orderRoutes - updateOrderStatus")
+		ctx.JSON(http.StatusBadRequest, newBadRequestError(err.Error()))
+		return
+	}
+
+	var req UpdateOrderStatusRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		r.l.Error(err, "http - v1 - orderRoutes - updateOrderStatus")
+		ctx.JSON(http.StatusBadRequest, newBadRequestError(err.Error()))
+		return
+	}
+
+	orderEntity := UpdateOrderRequestToOrderEntity(orderID)
+
+	err = r.uoc.UpdateOrderStatus(ctx.Request.Context(), &orderEntity, req.Status)
+	if err != nil {
+		r.l.Error(err, "http - v1 - orderRoutes - updateOrderStatus")
+		ctx.JSON(http.StatusInternalServerError, newInternalServerError(err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, newUpdateSuccess(nil))
+}
+
+type orderTTLResponse struct {
+	TTL int `json:"ttl_seconds"`
+}
+
+func (r *orderRoutes) getOrderTTL(ctx *gin.Context) {
+	orderID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		r.l.Error(err, "http - v1 - orderRoutes - getOrderTTL")
+		ctx.JSON(http.StatusBadRequest, newBadRequestError(err.Error()))
+		return
+	}
+
+	ttl, err := r.uoc.GetOrderTTL(ctx.Request.Context(), orderID)
+	if err != nil {
+		r.l.Error(err, "http - v1 - orderRoutes - getOrderTTL")
+		ctx.JSON(http.StatusInternalServerError, newInternalServerError(err.Error()))
+		return
+	}
+
+	var response orderTTLResponse
+	response.TTL = ttl
 
 	ctx.JSON(http.StatusOK, newGetSuccess(response))
 }

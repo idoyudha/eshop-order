@@ -4,8 +4,7 @@ CREATE TYPE "order_status" AS ENUM (
   'ON_DELIVERY',
   'DELIVERED',
   'REJECTED',
-  'FAILED',
-  'CANCELLED'
+  'EXPIRED'
 );
 
 CREATE TYPE "payment_status" AS ENUM (

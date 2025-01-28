@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/idoyudha/eshop-order/internal/entity"
 )
 
@@ -54,4 +55,40 @@ func PaymentMessageToOrderViewEntity(message KafkaPaymentUpdated) entity.OrderVi
 		PaymentAdminNote: message.Note,
 		UpdatedAt:        time.Now(),
 	}
+}
+
+func OrderEntityToKafkaOrderStatusUpdatedMessage(order *entity.Order) KafkaOrderStatusUpdated {
+	return KafkaOrderStatusUpdated{
+		OrderID: order.ID,
+		Status:  order.Status,
+	}
+}
+
+func OrderStatusUpdatedMessageToOrderViewEntity(msg KafkaOrderStatusUpdated) entity.OrderView {
+	return entity.OrderView{
+		OrderID:   msg.OrderID,
+		Status:    msg.Status,
+		UpdatedAt: time.Now(),
+	}
+}
+
+func OrderEntityToKafkaSaleCreatedMessage(order *entity.Order, products map[uuid.UUID]float64) KafkaSaleCreated {
+	return KafkaSaleCreated{
+		OrderID: order.ID,
+		UserID:  order.UserID,
+		Items:   orderItemEntityToKafkaSaleItemsCreated(order.Items, products),
+	}
+}
+
+func orderItemEntityToKafkaSaleItemsCreated(items []entity.OrderItem, products map[uuid.UUID]float64) []KafkaSaleItemCreated {
+	var kafkaItems []KafkaSaleItemCreated
+	for _, item := range items {
+		kafkaItems = append(kafkaItems, KafkaSaleItemCreated{
+			ProductID: item.ProductID,
+			Quantity:  item.ProductQuantity,
+			Price:     products[item.ProductID],
+		})
+	}
+
+	return kafkaItems
 }

@@ -14,6 +14,8 @@ type (
 		ProductService
 		ShippingCostService
 		Kafka
+		Redis
+		Constant
 	}
 
 	App struct {
@@ -61,6 +63,15 @@ type (
 
 	Kafka struct {
 		Broker string `env-required:"true" env:"KAFKA_BROKER"`
+	}
+
+	Redis struct {
+		RedisURL      string `env-required:"true" env:"REDIS_URL"`
+		RedisPassword string `env-required:"true" env:"REDIS_PASSWORD"`
+	}
+
+	Constant struct {
+		OrderTimeHours int `env-required:"true" env:"ORDER_TIME_HOURS"`
 	}
 )
 
