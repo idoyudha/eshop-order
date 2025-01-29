@@ -66,8 +66,10 @@ type (
 	}
 
 	Redis struct {
-		RedisURL      string `env-required:"true" env:"REDIS_URL"`
-		RedisPassword string `env-required:"true" env:"REDIS_PASSWORD"`
+		// RedisURL           string `env-required:"true" env:"REDIS_URL"`
+		RedisMaster        string `env-required:"true" env:"REDIS_MASTER"`
+		RedisSentinelAddrs string `env-required:"true" env:"REDIS_SENTINEL_ADDRS"`
+		RedisPassword      string `env-required:"true" env:"REDIS_PASSWORD"`
 	}
 
 	Constant struct {
