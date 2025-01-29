@@ -5,16 +5,18 @@ import (
 	"fmt"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/idoyudha/eshop-order/config"
 )
 
 type ProducerServer struct {
 	Producer *kafka.Producer
 }
 
-func NewKafkaProducer(brokerURL string) (*ProducerServer, error) {
+func NewKafkaProducer(kafkaCfg config.Kafka) (*ProducerServer, error) {
 	p, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": brokerURL,
-		"acks":              "all",
+		"bootstrap.servers":  kafkaCfg.Broker,
+		"acks":               "all",
+		"enable.idempotence": true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kafka producer: %w", err)
