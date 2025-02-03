@@ -68,3 +68,8 @@ func (o *OrderView) SetStatusToPending() {
 func (o *OrderView) SetStatusToDelivered() {
 	o.Status = ORDER_DELIVERED
 }
+
+// expired order
+func (o *OrderView) SetStatusToExpired() {
+	o.Status = ORDER_EXPIRED
+}
