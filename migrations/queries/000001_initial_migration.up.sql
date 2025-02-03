@@ -23,7 +23,6 @@ CREATE TABLE IF NOT EXISTS "orders_view" (
   "payment_status" payment_status,
   "payment_image_url" varchar,
   "payment_admin_note" varchar,
-  "shipping_cost" float NOT NULL,
   "created_at" timestamp NOT NULL,
   "updated_at" timestamp NOT NULL,
   "deleted_at" timestamp
@@ -40,6 +39,7 @@ CREATE TABLE IF NOT EXISTS "order_items_view" (
   "product_description" text NOT NULL,
   "product_category_id" uuid,
   "product_category_name" varchar NOT NULL,
+  "shipping_cost" float NOT NULL,
   "note" text,
   "created_at" timestamp NOT NULL,
   "updated_at" timestamp NOT NULL,
