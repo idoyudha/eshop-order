@@ -22,7 +22,7 @@ type RedisClient struct {
 func NewRedis(cfg config.Redis) (*RedisClient, error) {
 	options := RedisFailoverOptions(cfg)
 	client := &RedisClient{
-		Client: redis.NewFailoverClient(options),
+		Client: redis.NewFailoverClusterClient(options),
 	}
 
 	maxRetries := 5
@@ -32,7 +32,11 @@ func NewRedis(cfg config.Redis) (*RedisClient, error) {
 		cancel()
 
 		if err == nil {
-			log.Println("connected to redis")
+			role, err := client.Client.Do(context.Background(), "ROLE").Result()
+			if err != nil {
+				return nil, fmt.Errorf("failed to get redis role: %w", err)
+			}
+			log.Printf("connected to redis, with role: %s", role)
 			return client, nil
 		}
 		backoffDuration := time.Second * time.Duration(math.Pow(2, float64(i)))
