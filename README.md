@@ -18,8 +18,8 @@ eshop-auth
 │   ├── controller/         # serve handler layer
 │   │   ├── http/
 │   │   |   └── v1/         # rest http
-│   │   └── kafka
-│   │       └── v1/         # kafka subscriber
+│   │   ├── kafka           # kafka consumers
+│   │   └── redis           # redis subscriber (ex: subscribe to expired key)
 │   ├── dto/                # data transfer object global (ex: kafka publisher and consumer)
 │   ├── entity/             # entities of business logic (models) can be used in any layer
 │   └── usecase/            # business logic
