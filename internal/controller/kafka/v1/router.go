@@ -232,14 +232,5 @@ func (r *kafkaConsumerRoutes) handleOrderStatusUpdated(msg *kafka.Message) error
 		return fmt.Errorf("failed to update order view: %w", err)
 	}
 
-	// 2. send sales report to kafka
-	if message.Status == entity.ORDER_DELIVERED {
-		err := r.ucoc.SendSalesReport(context.Background(), orderViewEntity.OrderID)
-		if err != nil {
-			r.l.Error(err, "http - v1 - kafkaConsumerRoutes - handleOrderStatusUpdated")
-			return fmt.Errorf("failed to get order: %w", err)
-		}
-	}
-
 	return nil
 }
