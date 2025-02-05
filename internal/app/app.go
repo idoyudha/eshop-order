@@ -8,8 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/idoyudha/eshop-order/config"
 	v1HTTP "github.com/idoyudha/eshop-order/internal/controller/http/v1"
-	v1Kafka "github.com/idoyudha/eshop-order/internal/controller/kafka/v1"
-	"github.com/idoyudha/eshop-order/internal/event"
+	kafkaEvent "github.com/idoyudha/eshop-order/internal/controller/kafka"
+	redisEvent "github.com/idoyudha/eshop-order/internal/controller/redis"
 	"github.com/idoyudha/eshop-order/internal/usecase"
 	"github.com/idoyudha/eshop-order/internal/usecase/commandrepo"
 	"github.com/idoyudha/eshop-order/internal/usecase/queryrepo"
@@ -73,7 +73,7 @@ func Run(cfg *config.Config) {
 	// Kafka Consumer
 	kafkaErrChan := make(chan error, 1)
 	go func() {
-		if err := v1Kafka.KafkaNewRouter(orderQueryUseCase, orderCommandUseCase, l, kafkaConsumer, cfg.ProductService); err != nil {
+		if err := kafkaEvent.KafkaNewRouter(orderQueryUseCase, orderCommandUseCase, l, kafkaConsumer, cfg.ProductService); err != nil {
 			kafkaErrChan <- err
 		}
 	}()
@@ -81,7 +81,7 @@ func Run(cfg *config.Config) {
 	// Redis Consumer
 	redisErrChan := make(chan error, 1)
 	go func() {
-		if err := event.NewRedisScheduledEvents(redisClient, orderCommandUseCase, l, cfg.Constant); err != nil {
+		if err := redisEvent.NewRedisScheduledEvents(redisClient, orderCommandUseCase, l, cfg.Constant); err != nil {
 			redisErrChan <- err
 		}
 	}()
