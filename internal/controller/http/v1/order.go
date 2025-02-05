@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -116,7 +117,7 @@ func (r *orderRoutes) createOrder(ctx *gin.Context) {
 		return
 	}
 
-	err = r.uoc.CreateOrder(ctx.Request.Context(), &order, token.(string))
+	err = r.uoc.CreateOrder(context.Background(), &order, token.(string))
 	if err != nil {
 		r.l.Error(err, "http - v1 - orderRoutes - createOrder")
 		ctx.JSON(http.StatusInternalServerError, newInternalServerError(err.Error()))
@@ -136,7 +137,7 @@ func (r *orderRoutes) getOrderByID(ctx *gin.Context) {
 		return
 	}
 
-	order, err := r.uoq.GetOrderByID(ctx.Request.Context(), orderID)
+	order, err := r.uoq.GetOrderByID(context.Background(), orderID)
 	if err != nil {
 		r.l.Error(err, "http - v1 - orderRoutes - getOrderByID")
 		ctx.JSON(http.StatusInternalServerError, newInternalServerError(err.Error()))
@@ -156,7 +157,7 @@ func (r *orderRoutes) getOrderByUserID(ctx *gin.Context) {
 		return
 	}
 
-	orders, err := r.uoq.GetOrderByUserID(ctx.Request.Context(), userID.(uuid.UUID))
+	orders, err := r.uoq.GetOrderByUserID(context.Background(), userID.(uuid.UUID))
 	if err != nil {
 		r.l.Error(err, "http - v1 - orderRoutes - getOrderByUserID")
 		ctx.JSON(http.StatusInternalServerError, newInternalServerError(err.Error()))
@@ -169,7 +170,7 @@ func (r *orderRoutes) getOrderByUserID(ctx *gin.Context) {
 }
 
 func (r *orderRoutes) getAllOrders(ctx *gin.Context) {
-	orders, err := r.uoq.GetAllOrders(ctx.Request.Context())
+	orders, err := r.uoq.GetAllOrders(context.Background())
 	if err != nil {
 		r.l.Error(err, "http - v1 - orderRoutes - getAllOrders")
 		ctx.JSON(http.StatusInternalServerError, newInternalServerError(err.Error()))
@@ -202,7 +203,7 @@ func (r *orderRoutes) updateOrderStatus(ctx *gin.Context) {
 
 	orderEntity := UpdateOrderRequestToOrderEntity(orderID)
 
-	err = r.uoc.UpdateOrderStatus(ctx.Request.Context(), &orderEntity, req.Status)
+	err = r.uoc.UpdateOrderStatus(context.Background(), &orderEntity, req.Status)
 	if err != nil {
 		r.l.Error(err, "http - v1 - orderRoutes - updateOrderStatus")
 		ctx.JSON(http.StatusInternalServerError, newInternalServerError(err.Error()))
@@ -224,7 +225,7 @@ func (r *orderRoutes) getOrderTTL(ctx *gin.Context) {
 		return
 	}
 
-	ttl, err := r.uoc.GetOrderTTL(ctx.Request.Context(), orderID)
+	ttl, err := r.uoc.GetOrderTTL(context.Background(), orderID)
 	if err != nil {
 		r.l.Error(err, "http - v1 - orderRoutes - getOrderTTL")
 		ctx.JSON(http.StatusInternalServerError, newInternalServerError(err.Error()))

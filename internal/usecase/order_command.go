@@ -287,6 +287,7 @@ func (u *OrderCommandUseCase) UpdateOrderPaymentID(ctx context.Context, order *e
 	switch paymentStatus {
 	case entity.ORDER_PAYMENT_APPROVED:
 		order.SetStatusToOnDelivery()
+		u.SendSalesReport(ctx, order.ID)
 	case entity.ORDER_PAYMENT_REJECTED:
 		order.SetStatusToRejected()
 	}
