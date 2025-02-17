@@ -152,6 +152,7 @@ func (r *OrderPostgreQueryRepo) scanSingleOrder(ctx context.Context, query strin
 	if err != nil {
 		return nil, fmt.Errorf("failed to query order: %w", err)
 	}
+	defer rows.Close()
 
 	var order *entity.OrderView
 	items := make(map[uuid.UUID]entity.OrderItemView)
@@ -284,6 +285,7 @@ func (r *OrderPostgreQueryRepo) scanMultipleOrders(ctx context.Context, query st
 	if err != nil {
 		return nil, fmt.Errorf("failed to query orders: %w", err)
 	}
+	defer rows.Close()
 
 	ordersMap := make(map[uuid.UUID]*entity.OrderView)
 	itemsMap := make(map[uuid.UUID]map[uuid.UUID]entity.OrderItemView)
@@ -439,6 +441,7 @@ func (r *OrderPostgreQueryRepo) GetProductPriceByOrderID(ctx context.Context, or
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	items := make(map[uuid.UUID]float64)
 	for rows.Next() {
