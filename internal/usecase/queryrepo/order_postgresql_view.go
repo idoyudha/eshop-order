@@ -8,15 +8,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/idoyudha/eshop-order/internal/entity"
 	"github.com/idoyudha/eshop-order/pkg/postgresql/postgrequery"
+	"github.com/jackc/pgx/v5"
 )
 
 type OrderPostgreQueryRepo struct {
 	*postgrequery.PostgresQuery
 }
 
-func NewOrderPostgreQueryRepo(conn *postgrequery.PostgresQuery) *OrderPostgreQueryRepo {
+func NewOrderPostgreQueryRepo(pg *postgrequery.PostgresQuery) *OrderPostgreQueryRepo {
 	return &OrderPostgreQueryRepo{
-		PostgresQuery: conn,
+		PostgresQuery: pg,
 	}
 }
 
@@ -27,14 +28,16 @@ const (
 )
 
 func (r *OrderPostgreQueryRepo) Insert(ctx context.Context, order *entity.OrderView) error {
-	tx, err := r.Conn.BeginTx(ctx, nil)
+	tx, err := r.Pool.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel: pgx.TxIsoLevel(sql.LevelReadCommitted.String()),
+	})
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer tx.Rollback(ctx)
 
 	// order
-	_, err = tx.ExecContext(ctx, queryInsertOrdersView,
+	_, err = tx.Exec(ctx, queryInsertOrdersView,
 		order.ID, order.OrderID, order.UserID, order.Status, order.TotalPrice,
 		order.CreatedAt, order.UpdatedAt)
 	if err != nil {
@@ -43,7 +46,7 @@ func (r *OrderPostgreQueryRepo) Insert(ctx context.Context, order *entity.OrderV
 
 	// order items
 	for _, item := range order.Items {
-		_, err = tx.ExecContext(ctx, queryInserrOrderItemsView,
+		_, err = tx.Exec(ctx, queryInserrOrderItemsView,
 			item.ID, order.ID,
 			item.ProductID, item.ProductName, item.ProductPrice,
 			item.ProductQuantity, item.ProductImageURL, item.ProductDescription,
@@ -55,7 +58,7 @@ func (r *OrderPostgreQueryRepo) Insert(ctx context.Context, order *entity.OrderV
 	}
 
 	// order address
-	_, err = tx.ExecContext(ctx, queryInsertOrderAddressView,
+	_, err = tx.Exec(ctx, queryInsertOrderAddressView,
 		order.Address.ID, order.ID, order.Address.Street,
 		order.Address.City, order.Address.State, order.Address.ZipCode,
 		order.Address.Note, order.Address.CreatedAt, order.Address.UpdatedAt)
@@ -63,18 +66,13 @@ func (r *OrderPostgreQueryRepo) Insert(ctx context.Context, order *entity.OrderV
 		return fmt.Errorf("failed to insert order address view: %w", err)
 	}
 
-	return tx.Commit()
+	return tx.Commit(ctx)
 }
 
 const queryUpdateOrderPayment = `UPDATE orders_view SET status = $1, payment_id = $2, payment_status = $3, payment_image_url = $4, payment_admin_note = $5, updated_at = $6 WHERE order_id = $7;`
 
 func (r *OrderPostgreQueryRepo) UpdatePayment(ctx context.Context, orderView *entity.OrderView) error {
-	stmt, errStmt := r.Conn.PrepareContext(ctx, queryUpdateOrderPayment)
-	if errStmt != nil {
-		return errStmt
-	}
-	defer stmt.Close()
-	_, updateErr := stmt.ExecContext(ctx, orderView.Status, orderView.PaymentID, orderView.PaymentStatus, orderView.PaymentImageURL, orderView.PaymentAdminNote, orderView.UpdatedAt, orderView.OrderID)
+	_, updateErr := r.Pool.Exec(ctx, queryUpdateOrderPayment, orderView.Status, orderView.PaymentID, orderView.PaymentStatus, orderView.PaymentImageURL, orderView.PaymentAdminNote, orderView.UpdatedAt, orderView.OrderID)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -150,11 +148,10 @@ func (r *OrderPostgreQueryRepo) GetByStatus(ctx context.Context, status string) 
 
 // helper to scan single order
 func (r *OrderPostgreQueryRepo) scanSingleOrder(ctx context.Context, query string, args ...interface{}) (*entity.OrderView, error) {
-	rows, err := r.Conn.QueryContext(ctx, query, args...)
+	rows, err := r.Pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query order: %w", err)
 	}
-	defer rows.Close()
 
 	var order *entity.OrderView
 	items := make(map[uuid.UUID]entity.OrderItemView)
@@ -283,11 +280,10 @@ func (r *OrderPostgreQueryRepo) scanSingleOrder(ctx context.Context, query strin
 
 // helper to scan multiple orders
 func (r *OrderPostgreQueryRepo) scanMultipleOrders(ctx context.Context, query string, args ...interface{}) ([]*entity.OrderView, error) {
-	rows, err := r.Conn.QueryContext(ctx, query, args...)
+	rows, err := r.Pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query orders: %w", err)
 	}
-	defer rows.Close()
 
 	ordersMap := make(map[uuid.UUID]*entity.OrderView)
 	itemsMap := make(map[uuid.UUID]map[uuid.UUID]entity.OrderItemView)
@@ -423,13 +419,7 @@ func (r *OrderPostgreQueryRepo) scanMultipleOrders(ctx context.Context, query st
 const queryUpdateStatusByOrderID = `UPDATE orders_view SET status = $1, updated_at = $2 WHERE order_id = $3;`
 
 func (r *OrderPostgreQueryRepo) UpdateStatus(ctx context.Context, orderView *entity.OrderView) error {
-	stmt, errStmt := r.Conn.PrepareContext(ctx, queryUpdateStatusByOrderID)
-	if errStmt != nil {
-		return errStmt
-	}
-	defer stmt.Close()
-
-	_, updateErr := stmt.ExecContext(ctx, orderView.Status, orderView.UpdatedAt, orderView.OrderID)
+	_, updateErr := r.Pool.Exec(ctx, queryUpdateStatusByOrderID, orderView.Status, orderView.UpdatedAt, orderView.OrderID)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -445,11 +435,10 @@ const queryGetProductPriceByOrderID = `
 `
 
 func (r *OrderPostgreQueryRepo) GetProductPriceByOrderID(ctx context.Context, orderID uuid.UUID) (map[uuid.UUID]float64, error) {
-	rows, err := r.Conn.QueryContext(ctx, queryGetProductPriceByOrderID, orderID)
+	rows, err := r.Pool.Query(ctx, queryGetProductPriceByOrderID, orderID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	items := make(map[uuid.UUID]float64)
 	for rows.Next() {

@@ -8,15 +8,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/idoyudha/eshop-order/internal/entity"
 	"github.com/idoyudha/eshop-order/pkg/postgresql/postgrecommand"
+	"github.com/jackc/pgx/v5"
 )
 
 type OrderPostgreCommandRepo struct {
 	*postgrecommand.PostgresCommand
 }
 
-func NewOrderPostgreCommandRepo(conn *postgrecommand.PostgresCommand) *OrderPostgreCommandRepo {
+func NewOrderPostgreCommandRepo(pg *postgrecommand.PostgresCommand) *OrderPostgreCommandRepo {
 	return &OrderPostgreCommandRepo{
-		PostgresCommand: conn,
+		PostgresCommand: pg,
 	}
 }
 
@@ -28,16 +29,16 @@ const (
 
 func (r *OrderPostgreCommandRepo) Insert(ctx context.Context, order *entity.Order) error {
 	// begin transaction
-	tx, err := r.Conn.BeginTx(ctx, &sql.TxOptions{
-		Isolation: sql.LevelReadCommitted,
+	tx, err := r.Pool.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel: pgx.TxIsoLevel(sql.LevelReadCommitted.String()),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer tx.Rollback(ctx)
 
 	// insert order
-	_, err = tx.ExecContext(ctx, queryInsertOrder,
+	_, err = tx.Exec(ctx, queryInsertOrder,
 		order.ID, order.UserID, order.Status, order.TotalPrice, order.CreatedAt, order.UpdatedAt)
 	if err != nil {
 		return err
@@ -45,7 +46,7 @@ func (r *OrderPostgreCommandRepo) Insert(ctx context.Context, order *entity.Orde
 
 	// insert order items
 	for _, item := range order.Items {
-		_, err = tx.ExecContext(ctx, queryInsertOrderItems,
+		_, err = tx.Exec(ctx, queryInsertOrderItems,
 			item.ID, order.ID, item.ProductID, item.ProductQuantity, item.ShippingCost, item.Note, item.CreatedAt, item.UpdatedAt)
 		if err != nil {
 			return err
@@ -53,14 +54,14 @@ func (r *OrderPostgreCommandRepo) Insert(ctx context.Context, order *entity.Orde
 	}
 
 	// insert order address
-	_, err = tx.ExecContext(ctx, queryInsertOrderAddress,
+	_, err = tx.Exec(ctx, queryInsertOrderAddress,
 		order.Address.ID, order.ID, order.Address.Street, order.Address.City, order.Address.State, order.Address.ZipCode, order.Address.Note, order.Address.CreatedAt, order.Address.UpdatedAt)
 	if err != nil {
 		return err
 	}
 
 	// commit transaction
-	if err = tx.Commit(); err != nil {
+	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
@@ -70,13 +71,7 @@ func (r *OrderPostgreCommandRepo) Insert(ctx context.Context, order *entity.Orde
 const queryUpdateStatusOrder = `UPDATE orders SET status = $1, updated_at = $2 WHERE id = $3;`
 
 func (r *OrderPostgreCommandRepo) UpdateStatus(ctx context.Context, order *entity.Order) error {
-	stmt, errStmt := r.Conn.PrepareContext(ctx, queryUpdateStatusOrder)
-	if errStmt != nil {
-		return errStmt
-	}
-	defer stmt.Close()
-
-	_, updateErr := stmt.ExecContext(ctx, order.Status, order.UpdatedAt, order.ID)
+	_, updateErr := r.Pool.Exec(ctx, queryUpdateStatusOrder, order.Status, order.UpdatedAt, order.ID)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -87,13 +82,7 @@ func (r *OrderPostgreCommandRepo) UpdateStatus(ctx context.Context, order *entit
 const queryUpdatePaymentIDOrder = `UPDATE orders SET status = $1, payment_id = $2, updated_at = $3 WHERE id = $4;`
 
 func (r *OrderPostgreCommandRepo) UpdatePaymentID(ctx context.Context, order *entity.Order) error {
-	stmt, errStmt := r.Conn.PrepareContext(ctx, queryUpdatePaymentIDOrder)
-	if errStmt != nil {
-		return errStmt
-	}
-	defer stmt.Close()
-
-	_, updateErr := stmt.ExecContext(ctx, order.Status, order.PaymentID, order.UpdatedAt, order.ID)
+	_, updateErr := r.Pool.Exec(ctx, queryUpdatePaymentIDOrder, order.Status, order.PaymentID, order.UpdatedAt, order.ID)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -113,19 +102,15 @@ const queryGetOrderByID = `
 `
 
 func (r *OrderPostgreCommandRepo) GetByID(ctx context.Context, id uuid.UUID) (*entity.Order, error) {
-	stmt, errStmt := r.Conn.PrepareContext(ctx, queryGetOrderByID)
-	if errStmt != nil {
-		return nil, errStmt
-	}
-	defer stmt.Close()
-
-	rows, err := stmt.QueryContext(ctx, id)
+	rows, err := r.Pool.Query(ctx, queryGetOrderByID, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	var order entity.Order
+	order.Items = make([]entity.OrderItem, 0)
+
 	for rows.Next() {
 		var item entity.OrderItem
 		if err := rows.Scan(&order.ID, &order.UserID, &item.ProductID, &item.ProductQuantity); err != nil {
@@ -135,6 +120,10 @@ func (r *OrderPostgreCommandRepo) GetByID(ctx context.Context, id uuid.UUID) (*e
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
+	}
+
+	if len(order.Items) == 0 {
+		return nil, pgx.ErrNoRows
 	}
 
 	return &order, nil

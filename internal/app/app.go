@@ -40,11 +40,13 @@ func Run(cfg *config.Config) {
 	if err != nil {
 		l.Fatal("app - Run - postgrecommand.NewPostgres: ", err)
 	}
+	defer postgreSQLCommand.Close()
 
 	postgreSQLQuery, err := postgrequery.NewPostgres(cfg.PostgreSQLQuery)
 	if err != nil {
 		l.Fatal("app - Run - postgrequery.NewPostgres: ", err)
 	}
+	defer postgreSQLQuery.Close()
 
 	redisClient, err := redis.NewRedis(cfg.Redis)
 	if err != nil {

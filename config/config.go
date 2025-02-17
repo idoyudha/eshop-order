@@ -31,14 +31,16 @@ type (
 		URL         string `env-required:"true" env:"POSTGRESQL_COMMAND_URL"`
 		ConnTimeout int    `env-required:"true" env:"POSTGRESQL_COMMAND_CONN_TIMEOUT"`
 		ConnAttemps int    `env-required:"true" env:"POSTGRESQL_COMMAND_CONN_ATTEMPS"`
-		MaxPoolSize int    `env-required:"true" env:"POSTGRESQL_COMMAND_MAX_POOL_SIZE"`
+		MaxConnSize int    `env-required:"true" env:"POSTGRESQL_COMMAND_MAX_CONN_SIZE"`
+		MinConnSize int    `env-required:"true" env:"POSTGRESQL_COMMAND_MIN_CONN_SIZE"`
 	}
 
 	PostgreSQLQuery struct {
 		URL         string `env-required:"true" env:"POSTGRESQL_QUERY_URL"`
 		ConnTimeout int    `env-required:"true" env:"POSTGRESQL_QUERY_CONN_TIMEOUT"`
 		ConnAttemps int    `env-required:"true" env:"POSTGRESQL_QUERY_CONN_ATTEMPS"`
-		MaxPoolSize int    `env-required:"true" env:"POSTGRESQL_QUERY_MAX_POOL_SIZE"`
+		MaxConnSize int    `env-required:"true" env:"POSTGRESQL_QUERY_MAX_CONN_SIZE"`
+		MinConnSize int    `env-required:"true" env:"POSTGRESQL_QUERY_MIN_CONN_SIZE"`
 	}
 
 	Log struct {
